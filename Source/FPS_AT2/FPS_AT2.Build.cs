@@ -8,6 +8,12 @@ public class FPS_AT2 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay" });
+        PrivateIncludePaths.AddRange(
+            new string[] {
+                "FPS_AT2/Private"
+            }
+        );
+
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "AIModule", "GameplayTasks", "OnlineSubsystem", "NavigationSystem" });
 	}
 }

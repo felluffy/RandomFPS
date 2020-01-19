@@ -1,0 +1,102 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+#include "FPS_Charachter.generated.h"
+
+UCLASS()
+class FPS_AT2_API AFPS_Charachter : public ACharacter
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+		class USkeletalMeshComponent* Mesh1P;
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+		class USkeletalMeshComponent* Mesh3P;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		class UCameraComponent* FirstPersonCameraComponent;
+
+public:
+	// Sets default values for this character's properties
+	AFPS_Charachter();
+
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float BaseTurnRate;
+
+	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float BaseLookUpRate;
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+	/** Handles moving forward/backward */
+	void MoveForward(float Val);
+
+	/** Handles strafing movement, left and right */
+	void MoveRight(float Val);
+
+	/**
+ * Called via input to turn at a given rate.
+ * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+ */
+	void TurnAtRate(float Rate);
+
+	/**
+	 * Called via input to turn look up/down at a given rate.
+	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	 */
+	void LookUpAtRate(float Rate);
+
+	void BeginCrouch();
+	void EndCrouch();
+	void Suicide();
+
+public:	
+
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+	/** Returns FirstPersonCameraComponent subobject **/
+	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	//void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+
+
+public:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		class UHealthComponent* HealthComp;
+	UFUNCTION(BlueprintCallable)
+		void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+	UPROPERTY(BlueprintReadOnly, Category = "Health")
+		bool bInactive = false;
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = Weapons)
+	FName WeaponAttachPoint = TEXT("GripPoint");
+	UPROPERTY(EditDefaultsOnly, Category = Weapons)
+	TArray<TSubclassOf<class AWeaponBase>> DefaultWeaponClasses;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TArray<class AWeaponBase*> Inventory;
+	UPROPERTY(EditDefaultsOnly, Category = Weapons)
+	class AWeaponBase* CurrentWeapon;
+	class AWeaponBase* GetInventoryWeapon(int index) const;
+	void EquipWeapon(class AWeaponBase* Weapon);
+	void DropWeapon(class AWeaponBase* Weapon);
+	void AddWeapon(class AWeaponBase* Weapon);
+
+	void Reload();
+	void StartFire();
+	void StopFire();
+	void NextWeapon();
+	void PreviousWeapon();
+	bool CanFire();
+	bool CanReload();
+};

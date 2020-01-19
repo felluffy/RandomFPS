@@ -3,6 +3,9 @@
 #include "FPS_AT2Projectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "GameFramework/DamageType.h"
 
 AFPS_AT2Projectile::AFPS_AT2Projectile() 
 {
@@ -37,6 +40,8 @@ void AFPS_AT2Projectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+		FHitResult HitInfo;
+		UGameplayStatics::ApplyPointDamage(OtherActor, 30, GetActorLocation(), HitInfo, NULL, this, UDamageType::StaticClass());
 
 		Destroy();
 	}

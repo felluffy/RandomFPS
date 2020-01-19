@@ -12,7 +12,7 @@ UHealthComponent::UHealthComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
-	//SetIsReplicated(true);
+	SetIsReplicated(true);
 }
 
 
@@ -25,6 +25,7 @@ void UHealthComponent::BeginPlay()
 	auto Owner = GetOwner();
 	if (Owner)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Health at %s"), *Owner->GetName());
 		Owner->OnTakeAnyDamage.AddDynamic(this, &UHealthComponent::TakeAnyDamage);
 	}
 	//}

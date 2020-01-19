@@ -1,7 +1,6 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "FPS_AT2Character.h"
-#include "FPS_AT2Projectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -24,11 +23,17 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 AFPS_AT2Character::AFPS_AT2Character()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(50.f, 96.0f);
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
+
+	Mesh3P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh3P"));
+	Mesh3P->SetupAttachment(GetCapsuleComponent());
+	Mesh3P->bCastDynamicShadow = true;
+	Mesh3P->CastShadow = true;
+
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -44,6 +49,8 @@ AFPS_AT2Character::AFPS_AT2Character()
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
+
+	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 
 	// Create a gun mesh component
 	//FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
@@ -317,20 +324,21 @@ void AFPS_AT2Character::StartFire()
 {
 
 	if (ensure(Spawned_weapon != nullptr))
-		//Spawned_weapon->StartFire();
+		Spawned_weapon->StartFire();
 	//spawned_weapon->SetFiring(true);
-	UE_LOG(LogTemp, Warning, TEXT("Start fire fps char"));
+	//UE_LOG(LogTemp, Warning, TEXT("Start fire fps char"));
 }
 
 void AFPS_AT2Character::StopFire()
 {
 
-	//if (ensure(Spawned_weapon != nullptr));
-		//Spawned_weapon->StopFire();
+	if (ensure(Spawned_weapon != nullptr))
+		Spawned_weapon->StopFire();
 	//spawned_weapon->SetFiring(false);
+	//UE_LOG(LogTemp, Warning, TEXT("Stop fire fps char"));
 }
 
-
+//
 void AFPS_AT2Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -340,6 +348,7 @@ void AFPS_AT2Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 void AFPS_AT2Character::OnHealthChanged(UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
+	UE_LOG(LogTemp, Warning, TEXT("CYKA BLYAT CHECK HERE"));
 	if (Health <= 0.0f && !bInactive)
 	{
 		bInactive = true;

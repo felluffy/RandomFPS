@@ -10,6 +10,13 @@ UCLASS()
 class FPS_AT2_API AWeaponBase : public AActor
 {
 	GENERATED_BODY()
+
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+		class USkeletalMeshComponent* FP_Gun;
+
+	/** Location on gun mesh where projectiles should spawn. */
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+		class USceneComponent* FP_MuzzleLocation;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -20,6 +27,44 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+	UFUNCTION(BlueprintCallable, Category = "Properties")
+		void OnFire();
+	UFUNCTION(BlueprintCallable, Category = "Properties")
+		void WeaponFire();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		FVector GunOffset;
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+		TSubclassOf<class ABullet> ProjectileClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		class USoundBase* FireSound;
+
+	/** AnimMontage to play each time we fire */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		class UAnimMontage* FireAnimation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		class UAnimMontage* ReloadAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		UParticleSystem* MuzzleEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		FName MuzzleSocketName = TEXT("Muzzle");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Gameplay)
+		TSubclassOf<class UCameraShake> FireShake;
+	inline void SetFiring(bool state) { bAllowedToFire = state; }
+
+	void StartFire();
+	void StopFire();
+
+private:
+	bool bAllowedToFire = false;
+	float fLastFireTime;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float fIntervalShootingTime = .2f;
+
+	FTimerHandle TimerHandle_fIntervalShootingTime;
 	
 	//enum class EAmmoType
 	//{

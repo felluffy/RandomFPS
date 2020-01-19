@@ -16,6 +16,8 @@ class AFPS_AT2Character : public ACharacter
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	class USkeletalMeshComponent* Mesh1P;
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	class USkeletalMeshComponent* Mesh3P;
 
 	/** Gun mesh: 1st person view (seen only by self) */
 	//UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
@@ -44,9 +46,6 @@ class AFPS_AT2Character : public ACharacter
 	///** Motion controller (left hand) */
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	//class UMotionControllerComponent* L_MotionController;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UHealthComponent* HealthComp;
 
 	UPROPERTY(EditAnywhere, Category = Setup)
 	TSubclassOf<class AWeaponBase> WeaponBP;
@@ -146,11 +145,18 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+	/** Add to network **/
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+		class UHealthComponent* HealthComp;
+
 	UFUNCTION(BlueprintCallable)
-	void OnHealthChanged(UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+	void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Health")
+	bool bInactive = false;
 
 protected:
 	void StartFire();
@@ -158,14 +164,12 @@ protected:
 	void BeginCrouch();
 	void EndCrouch();
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Health")
-		bool bInactive = false;
+	
 	
 private:
 	UPROPERTY(Replicated)
 		class AWeaponBase* Spawned_weapon = nullptr;
-	UPROPERTY(Replicated)
-	TArray<class AWeaponBase*> InventoryWeapons;
+	//UPROPERTY(Replicated)
+	//TArray<class AWeaponBase*> InventoryWeapons;
 
 };
-
