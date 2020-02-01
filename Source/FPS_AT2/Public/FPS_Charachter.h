@@ -34,6 +34,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
 
@@ -54,7 +56,11 @@ protected:
 
 	void BeginCrouch();
 	void EndCrouch();
+	void Jump() override;
+	void StopJumping() override;
 	void Suicide();
+	void StartSprinting();
+	void StopSprinting();
 
 public:	
 
@@ -89,8 +95,13 @@ protected:
 	class AWeaponBase* CurrentWeapon;
 	class AWeaponBase* GetInventoryWeapon(int index) const;
 	void EquipWeapon(class AWeaponBase* Weapon);
+	void SetCurrentWeapon(class AWeaponBase* Weapon, class AWeaponBase* NewWeapon);
 	void DropWeapon(class AWeaponBase* Weapon);
+	void OnDropWeapon();
+	void RemoveWeapon(class AWeaponBase* Weapon);
 	void AddWeapon(class AWeaponBase* Weapon);
+	UPROPERTY(EditDefaultsOnly, Category = "Weapons")
+	float DropWeaponMaxDistance;
 
 	void Reload();
 	void StartFire();
@@ -98,5 +109,17 @@ protected:
 	void NextWeapon();
 	void PreviousWeapon();
 	bool CanFire();
-	bool CanReload();
+
+	bool isReloading = false; //should deactivate on a broadcast from weappon 
+private:
+	float LastNoiseTime;
+	float SprintingSpeedModifier;
+	UCharacterMovementComponent* MovementComponent;
+
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Animations")
+		bool bShouldSprint = false;
+	UPROPERTY(BlueprintReadOnly, Category = "Animations")
+		bool bIsJumpingToggled = false;
+	bool bAllowedToFire;
 };

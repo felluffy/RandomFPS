@@ -48,7 +48,7 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 {
 	// Only add impulse and destroy projectile if we hit a physics
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName());
-	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
+	//if ((OtherActor != NULL) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 10.0f, GetActorLocation());
 		FHitResult HitInfo;

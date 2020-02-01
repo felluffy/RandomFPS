@@ -9,6 +9,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/InputComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "WeaponBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
 #include "WeaponBase.h"
@@ -18,7 +20,7 @@
 AFPS_Charachter::AFPS_Charachter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	GetCapsuleComponent()->InitCapsuleSize(50.f, 96.0f);
 	Mesh3P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh3P"));
 	Mesh3P->SetupAttachment(GetCapsuleComponent());
@@ -45,6 +47,12 @@ AFPS_Charachter::AFPS_Charachter()
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
 	HealthComp->SetAutoActivate(true);
 
+	MovementComponent = FindComponentByClass<UCharacterMovementComponent>();
+	MovementComponent->MaxWalkSpeedCrouched = 200;
+	DropWeaponMaxDistance = 200.0f;
+
+	SprintingSpeedModifier = 3.0f;
+
 
 }
 
@@ -53,6 +61,11 @@ void AFPS_Charachter::BeginPlay()
 {
 	Super::BeginPlay();
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
+	if(DefaultWeaponClasses.Num() >= 0)
+	{
+		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
+		CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
+	}
 }
 
 
@@ -60,7 +73,6 @@ void AFPS_Charachter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
-		// add movement in that direction
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
 }
@@ -70,6 +82,7 @@ void AFPS_Charachter::MoveRight(float Value)
 	if (Value != 0.0f)
 	{
 		// add movement in that direction
+		
 		AddMovementInput(GetActorRightVector(), Value);
 	}
 }
@@ -84,15 +97,139 @@ void AFPS_Charachter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
+void AFPS_Charachter::EquipWeapon(AWeaponBase* Weapon)
+{
+	if(Weapon && Weapon != CurrentWeapon)
+	{
+		SetCurrentWeapon(CurrentWeapon, Weapon);
+	}
+}
+
+void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, class AWeaponBase* NewWeapon)
+{
+	if (PreviousWeapon == nullptr || PreviousWeapon == NewWeapon)
+	{
+		CurrentWeapon = NewWeapon;
+	}
+	if (PreviousWeapon)
+	{
+		PreviousWeapon->Unequip();
+	}
+	NewWeapon->Equip();
+}
+
+void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
+{
+	//@TODO Drop weapon upon pressing F
+	if(Inventory.Num() < 1)
+		return;
+	if(!Weapon)
+		return;
+	//if (Inventory.Contains(Weapon))
+	//{
+	//	Weapon->OnLeaveInventory();
+	//	Inventory.RemoveSingle(Weapon);
+	//}
+	if (CurrentWeapon)
+	{
+		FVector CameraLocation;
+		FRotator CameraRotation;
+
+		GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
+		FVector SpawnLocation;
+		FRotator SpawnRotation = CameraRotation;
+		//line trace on where to drop
+		const FVector LinetraceStart = GetActorLocation();
+		const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
+		
+		FHitResult Hit;
+		FCollisionQueryParams CollisionParams;
+		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LinetraceEnd, ECC_WorldDynamic, CollisionParams);
+		if(Hit.bBlockingHit)
+			SpawnLocation = Hit.ImpactPoint + (Hit.ImpactNormal * 20);
+		else 
+			SpawnLocation = LinetraceEnd;
+		FActorSpawnParameters SpawnParams;
+		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+	}
+	
+	SetCurrentWeapon(CurrentWeapon, Inventory[0]);
+
+	Weapon->Destroy();
+	
+}
+
+
+void AFPS_Charachter::OnDropWeapon()
+{
+	DropWeapon(CurrentWeapon);
+	UE_LOG(LogTemp, Warning, TEXT("DROP WEAPON"));
+}
+
+void AFPS_Charachter::RemoveWeapon(AWeaponBase* Weapon)
+{
+	if(!(Weapon))
+		return;
+	Weapon->Unequip();
+	Inventory.Remove(Weapon);
+}
+
+void AFPS_Charachter::AddWeapon(AWeaponBase* Weapon)
+{
+	if (!(Weapon))
+		return;
+	Weapon->SetOwningPawn(this);
+	Inventory.AddUnique(Weapon);
+}
+
+void AFPS_Charachter::Reload()
+{
+	//isReloading = true;
+	CurrentWeapon->Reload();
+	//isReloading = false;
+}
+
 void AFPS_Charachter::StartFire()
 {
-
+	if (bAllowedToFire && CurrentWeapon)
+	{
+		CurrentWeapon->StartFire();
+	}
 }
 
 void AFPS_Charachter::StopFire()
 {
-
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StopFire();
+	}
 }
+
+void AFPS_Charachter::NextWeapon()
+{
+	if (Inventory.Num() > 1)
+	{
+		int32 Index = (Inventory.Find(CurrentWeapon, Index) + 1) % Inventory.Num();
+		EquipWeapon(Inventory[Index]);
+	}
+}
+
+void AFPS_Charachter::PreviousWeapon()
+{
+	if (Inventory.Num() > 1)
+	{
+		int32 Index = (Inventory.Find(CurrentWeapon, Index) - 1 + Inventory.Num()) % Inventory.Num();
+		EquipWeapon(Inventory[Index]);
+	}
+}
+
+bool AFPS_Charachter::CanFire()
+{
+	if(!isReloading)
+		return true;
+	return false;
+}
+
 
 void AFPS_Charachter::BeginCrouch()
 {
@@ -104,9 +241,38 @@ void AFPS_Charachter::EndCrouch()
 	UnCrouch();
 }
 
+void AFPS_Charachter::Jump()
+{
+	Super::Jump();
+	bIsJumpingToggled = true;
+}
+
+void AFPS_Charachter::StopJumping()
+{
+	Super::StopJumping();
+	bIsJumpingToggled = false;
+}
+
 void AFPS_Charachter::Suicide()
 {
 	UGameplayStatics::ApplyDamage(this, 1000, GetController()->GetInstigatorController(), this, UDamageType::StaticClass());
+}
+
+void AFPS_Charachter::StartSprinting()
+{
+	if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .1f)
+		MovementComponent->MaxWalkSpeed = 200;
+	MovementComponent->MaxWalkSpeed = 600;
+	bShouldSprint = true;
+	StopFire();
+	bAllowedToFire = false;
+
+}
+
+void AFPS_Charachter::StopSprinting()
+{
+	bShouldSprint = false;
+	bAllowedToFire = true;
 }
 
 // Called to bind functionality to input
@@ -114,8 +280,8 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	// Bind jump events
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AFPS_Charachter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AFPS_Charachter::StopJumping);
 
 	// Bind fire event
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AFPS_Charachter::BeginCrouch);
@@ -123,6 +289,13 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_Charachter::StartFire);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AFPS_Charachter::StopFire);
 	PlayerInputComponent->BindAction("Suicide", IE_Pressed, this, &AFPS_Charachter::Suicide);
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AFPS_Charachter::StartSprinting);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AFPS_Charachter::StopSprinting);
+	PlayerInputComponent->BindAction("Drop_Item", IE_Pressed, this, &AFPS_Charachter::OnDropWeapon);
+	
+	//@TODO: NEXT WEAPON AND PREVIOUS WEAPON SETUP SUING MOUSE WHEEL
+	//@TODO: DROP WITH G
+	//@TODO: EQUIP WITH E IF LINE TRACE
 
 	// Enable touchscreen input
 	//EnableTouchscreenMovement(PlayerInputComponent);
@@ -171,3 +344,17 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 //	//DOREPLIFETIME(AFPS_Charachter, Spawned_weapon);
 //	//DOREPLIFETIME(AFPS_Charachter, bInactive);
 //}
+
+
+void AFPS_Charachter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (bShouldSprint)
+	{
+		UnCrouch();
+	}
+
+	//@TODO: pick up based on what's seen throiugh linetrace from eye to dropped equipment
+
+
+}

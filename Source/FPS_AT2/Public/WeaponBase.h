@@ -6,6 +6,16 @@
 #include "GameFramework/Actor.h"
 #include "WeaponBase.generated.h"
 
+UENUM()
+enum class EWeaponState
+{
+	Idle,
+	Firing,
+	Equipping,
+	Reloading
+};
+
+
 UCLASS()
 class FPS_AT2_API AWeaponBase : public AActor
 {
@@ -13,6 +23,8 @@ class FPS_AT2_API AWeaponBase : public AActor
 
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 		class USkeletalMeshComponent* FP_Gun;
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+		class USkeletalMeshComponent* TP_Gun;
 
 	/** Location on gun mesh where projectiles should spawn. */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
@@ -43,6 +55,8 @@ public:
 		class UAnimMontage* FireAnimation;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 		class UAnimMontage* ReloadAnimation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		class UAnimMontage* EquipAnimation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 		UParticleSystem* MuzzleEffect;
@@ -54,8 +68,8 @@ public:
 		TSubclassOf<class UCameraShake> FireShake;
 	inline void SetFiring(bool state) { bAllowedToFire = state; }
 
-	void StartFire();
-	void StopFire();
+	virtual void StartFire();
+	virtual void StopFire();
 
 private:
 	bool bAllowedToFire = false;
@@ -65,14 +79,24 @@ private:
 		float fIntervalShootingTime = .2f;
 
 	FTimerHandle TimerHandle_fIntervalShootingTime;
+	void GiveAmmo(int AddAmount);
+public:
+	void SetOwningPawn(class AFPS_Charachter* NewOwner);
 	
-	//enum class EAmmoType
-	//{
-	//	EBullet,
-	//	ERocket
-	//};
+	class AFPS_Charachter* Owner = nullptr;
+	void Unequip();
+	void Equip();
+	void Reload();
+	void OnLeaveInventory();
 
-	//void GiveAmmo(int AddAmount);
-	//void UseAmmo();
+private:
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+	int16 MaxAmmo;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+	int16 MagazineAmmoCapacity;
+	int16 CurrentAmmoInMagazine;
+	int16 CurrentAmmo;
 
+	bool CanFire();
+	//FName ShellExitSocket = TEXT("ShellExit");
 };

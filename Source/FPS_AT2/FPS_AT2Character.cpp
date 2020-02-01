@@ -138,6 +138,7 @@ void AFPS_AT2Character::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AFPS_AT2Character::EndCrouch);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_AT2Character::StartFire);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AFPS_AT2Character::StopFire);
+	
 
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
