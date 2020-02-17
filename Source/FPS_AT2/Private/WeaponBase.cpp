@@ -50,6 +50,11 @@ void AWeaponBase::BeginPlay()
 	CurrentAmmoInMagazine = MagazineAmmoCapacity;
 	CurrentAmmo = MaxAmmo - CurrentAmmoInMagazine;
 	FMath::Clamp<int>(CurrentAmmo, 0, MaxAmmo);
+	if (GetOwner() != NULL)
+	{
+		auto name = *GetOwner()->GetName();
+		UE_LOG(LogTemp, Warning, TEXT("%s is the owner"), *name);
+	}
 
 }
 
@@ -81,6 +86,10 @@ void AWeaponBase::OnFire()
 				{
 					UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
 				}
+			}
+			else
+			{
+				Reload();
 			}
 		}
 	}
@@ -122,6 +131,22 @@ void AWeaponBase::SetOwningPawn(AFPS_Charachter* NewOwner)
 	}
 }
 
+void AWeaponBase::AttachMeshToPawn()
+{
+	if (Owner)
+	{
+		USkeletalMeshComponent* OwnerMesh1P = Owner->GetMeshComp(true);
+		USkeletalMeshComponent* OwnerMesh3P = Owner->GetMeshComp(false);
+
+		FName AttachPoint = Owner->WeaponAttachPoint;
+
+		FP_Gun->SetHiddenInGame(false);
+		TP_Gun->SetHiddenInGame(false);
+		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachPoint);
+		FP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachPoint);
+	}
+}
+
 void AWeaponBase::Unequip()
 {
 	FP_Gun->SetHiddenInGame(true);
@@ -134,5 +159,5 @@ void AWeaponBase::Equip()
 
 void AWeaponBase::Reload()
 {
-
+	return;
 }

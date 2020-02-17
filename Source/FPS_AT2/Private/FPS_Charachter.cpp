@@ -64,7 +64,18 @@ void AFPS_Charachter::BeginPlay()
 	if(DefaultWeaponClasses.Num() >= 0)
 	{
 		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
-		CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
+		CurrentWeapon->SetOwningPawn(this);
+		CurrentWeapon->AttachMeshToPawn();
+		//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
+		
+	}
+
+	auto it = Cast<AFPS_Charachter>(GetOwner());
+	if (it)
+	{	
+		USkeletalMeshComponent* PawnMesh1p = it->GetMeshComp(false);
+		//CurrentWeapon->attacht
+		//Mesh1P->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, it->WeaponAttachPoint);
 	}
 }
 

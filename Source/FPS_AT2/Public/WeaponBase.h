@@ -82,6 +82,7 @@ private:
 	void GiveAmmo(int AddAmount);
 public:
 	void SetOwningPawn(class AFPS_Charachter* NewOwner);
+	void AttachMeshToPawn();
 	
 	class AFPS_Charachter* Owner = nullptr;
 	void Unequip();

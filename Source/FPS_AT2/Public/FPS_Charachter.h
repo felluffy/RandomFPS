@@ -22,6 +22,11 @@ public:
 	// Sets default values for this character's properties
 	AFPS_Charachter();
 
+	USkeletalMeshComponent* GetMeshComp(bool Which)
+	{
+		return Which == true ? Mesh1P : Mesh3P;
+	}
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseTurnRate;
@@ -83,10 +88,10 @@ public:
 		void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 	UPROPERTY(BlueprintReadOnly, Category = "Health")
 		bool bInactive = false;
-
-protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)
-	FName WeaponAttachPoint = TEXT("GripPoint");
+		FName WeaponAttachPoint = TEXT("GripPoint");
+protected:
+
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)
 	TArray<TSubclassOf<class AWeaponBase>> DefaultWeaponClasses;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
