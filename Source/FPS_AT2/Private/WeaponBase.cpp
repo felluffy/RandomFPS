@@ -54,7 +54,9 @@ void AWeaponBase::BeginPlay()
 	{
 		auto name = *GetOwner()->GetName();
 		UE_LOG(LogTemp, Warning, TEXT("%s is the owner"), *name);
+		
 	}
+	UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 
 }
 
@@ -63,13 +65,15 @@ void AWeaponBase::OnFire()
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *ProjectileClass->GetName());
 	if (ProjectileClass != NULL)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 		UWorld* const World = GetWorld();
 		if (World != NULL)
 		{
 			if (CurrentAmmoInMagazine) // can fire
 			{
-
-				const FRotator SpawnRotation = FP_MuzzleLocation->GetComponentRotation();
+				UE_LOG(LogTemp, Warning, TEXT("FIRING"));
+				//const FRotator SpawnRotation = FP_MuzzleLocation->GetComponentRotation();
+				const FRotator SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
 				// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
 				const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
@@ -80,7 +84,10 @@ void AWeaponBase::OnFire()
 				// spawn the projectile at the muzzle
 				World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 				CurrentAmmoInMagazine--;
-				CurrentAmmo--;
+				if (ensure(FireSound))
+				{
+					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
+				}
 
 				if (ensure(MuzzleEffect))
 				{
@@ -142,22 +149,43 @@ void AWeaponBase::AttachMeshToPawn()
 
 		FP_Gun->SetHiddenInGame(false);
 		TP_Gun->SetHiddenInGame(false);
-		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachPoint);
-		FP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachPoint);
+		FP_Gun->SetOnlyOwnerSee(true);
+		TP_Gun->SetOwnerNoSee(true);
+		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
+		TP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 	}
 }
 
 void AWeaponBase::Unequip()
 {
 	FP_Gun->SetHiddenInGame(true);
+	StopFire();
 }
 
 void AWeaponBase::Equip()
 {
-	return;
+	FP_Gun->SetHiddenInGame( false );
 }
 
 void AWeaponBase::Reload()
 {
-	return;
+	//reload conditions
+	if (CurrentAmmoInMagazine == MagazineAmmoCapacity || CurrentAmmo <= 0)
+		return;
+	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
+
+	GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, 1.0f, false);
+
+	GetWorldTimerManager().ClearTimer(TimerHandle_fIntervalShootingTime);
+
+	CurrentAmmo += CurrentAmmoInMagazine;
+	if(CurrentAmmo >= MagazineAmmoCapacity)
+		CurrentAmmoInMagazine = MagazineAmmoCapacity;
+	else
+		CurrentAmmoInMagazine = CurrentAmmo % (MagazineAmmoCapacity + 1);
+	CurrentAmmo -= CurrentAmmoInMagazine;
+	if (ReloadSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReloadSound, GetActorLocation());
+	}
 }

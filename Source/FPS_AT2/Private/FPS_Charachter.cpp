@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "WeaponBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "FPS_AT2PlayerController.h"
 #include "GameFramework/DamageType.h"
 #include "WeaponBase.h"
 #include "Net/UnrealNetwork.h"
@@ -244,11 +245,13 @@ bool AFPS_Charachter::CanFire()
 
 void AFPS_Charachter::BeginCrouch()
 {
+	CurrentWeapon->Unequip();
 	Crouch();
 }
 
 void AFPS_Charachter::EndCrouch()
 {
+	CurrentWeapon->Equip();
 	UnCrouch();
 }
 
@@ -286,6 +289,31 @@ void AFPS_Charachter::StopSprinting()
 	bAllowedToFire = true;
 }
 
+void AFPS_Charachter::CommandBot()
+{
+	//Get all bots;
+	//UGameplayStatics::GetAllActorsOfClass(GetWorld)
+	//UGameplayStatics::GetAllActorsOfClas
+	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController)
+	{
+		//line trace
+		FHitResult Hit;
+		auto LineTraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
+		auto EndLocation = LineTraceStart + (500 * LineTraceStart);	//lline trace range is 500
+		GetWorld()->LineTraceSingleByChannel(Hit, LineTraceStart, EndLocation, ECC_Visibility);
+		FVector fv(0, 0, 0);
+		if (Hit.bBlockingHit)
+		{
+			fv = Hit.Location;
+			UE_LOG(LogTemp, Warning, TEXT("ETDTSKKM %f - %f - %f"), fv.X, fv.Y, fv.Z);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
+		
+		PlayerController->CommandMove(fv);
+	}
+}
+
 // Called to bind functionality to input
 void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -299,11 +327,14 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AFPS_Charachter::EndCrouch);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_Charachter::StartFire);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AFPS_Charachter::StopFire);
+	PlayerInputComponent->BindAction("Reload", IE_Released, this, &AFPS_Charachter::Reload);
 	PlayerInputComponent->BindAction("Suicide", IE_Pressed, this, &AFPS_Charachter::Suicide);
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AFPS_Charachter::StartSprinting);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AFPS_Charachter::StopSprinting);
 	PlayerInputComponent->BindAction("Drop_Item", IE_Pressed, this, &AFPS_Charachter::OnDropWeapon);
-	
+	PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
+	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);
+	PlayerInputComponent->BindAction("PreviousItem", IE_Pressed, this, &AFPS_Charachter::PreviousWeapon);
 	//@TODO: NEXT WEAPON AND PREVIOUS WEAPON SETUP SUING MOUSE WHEEL
 	//@TODO: DROP WITH G
 	//@TODO: EQUIP WITH E IF LINE TRACE
@@ -324,6 +355,9 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAxis("TurnRate", this, &AFPS_Charachter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AFPS_Charachter::LookUpAtRate);
+
+
+	//PlayerInputComponent->BindAxis("TEST_COMMAND_1", this, &AFPS_Charachter::CommandBot);
 
 }
 

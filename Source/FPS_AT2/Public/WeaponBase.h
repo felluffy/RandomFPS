@@ -20,12 +20,6 @@ UCLASS()
 class FPS_AT2_API AWeaponBase : public AActor
 {
 	GENERATED_BODY()
-
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-		class USkeletalMeshComponent* FP_Gun;
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-		class USkeletalMeshComponent* TP_Gun;
-
 	/** Location on gun mesh where projectiles should spawn. */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 		class USceneComponent* FP_MuzzleLocation;
@@ -33,6 +27,11 @@ class FPS_AT2_API AWeaponBase : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AWeaponBase();
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Mesh)
+		class USkeletalMeshComponent* FP_Gun;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Mesh)
+		class USkeletalMeshComponent* TP_Gun;
 
 protected:
 	// Called when the game starts or when spawned
@@ -47,8 +46,8 @@ public:
 		FVector GunOffset;
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 		TSubclassOf<class ABullet> ProjectileClass;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-		class USoundBase* FireSound;
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		class USoundBase* FireSound;*/
 
 	/** AnimMontage to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
@@ -78,7 +77,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
 		float fIntervalShootingTime = .2f;
 
-	FTimerHandle TimerHandle_fIntervalShootingTime;
+	FTimerHandle TimerHandle_fIntervalShootingTime, TimerHandle_fReloadTime;
 	void GiveAmmo(int AddAmount);
 public:
 	void SetOwningPawn(class AFPS_Charachter* NewOwner);
@@ -100,4 +99,14 @@ private:
 
 	bool CanFire();
 	//FName ShellExitSocket = TEXT("ShellExit");
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Transient)
+	class USoundBase* FireSound;
+
+	UPROPERTY(EditDefaultsOnly, Transient)
+	class USoundBase* ReloadSound;
+
+
+
 };

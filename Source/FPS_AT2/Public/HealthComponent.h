@@ -30,7 +30,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealhChangedSignature OnHealthChanged;
 
-	
+	float GetHealth() const { return CurrentHealth; }
+
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:

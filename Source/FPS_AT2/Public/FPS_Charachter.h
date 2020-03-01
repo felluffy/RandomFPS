@@ -10,10 +10,10 @@ UCLASS()
 class FPS_AT2_API AFPS_Charachter : public ACharacter
 {
 	GENERATED_BODY()
-
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+public:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Mesh)
 		class USkeletalMeshComponent* Mesh1P;
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Mesh)
 		class USkeletalMeshComponent* Mesh3P;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FirstPersonCameraComponent;
@@ -66,6 +66,7 @@ protected:
 	void Suicide();
 	void StartSprinting();
 	void StopSprinting();
+	void CommandBot();
 
 public:	
 
@@ -96,7 +97,7 @@ protected:
 	TArray<TSubclassOf<class AWeaponBase>> DefaultWeaponClasses;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TArray<class AWeaponBase*> Inventory;
-	UPROPERTY(EditDefaultsOnly, Category = Weapons)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Weapons)
 	class AWeaponBase* CurrentWeapon;
 	class AWeaponBase* GetInventoryWeapon(int index) const;
 	void EquipWeapon(class AWeaponBase* Weapon);
@@ -107,7 +108,6 @@ protected:
 	void AddWeapon(class AWeaponBase* Weapon);
 	UPROPERTY(EditDefaultsOnly, Category = "Weapons")
 	float DropWeaponMaxDistance;
-
 	void Reload();
 	void StartFire();
 	void StopFire();
@@ -116,6 +116,10 @@ protected:
 	bool CanFire();
 
 	bool isReloading = false; //should deactivate on a broadcast from weappon 
+
+public: 
+	//UPROPERTY(BlueprintCallable, Category = "Weapons")
+	//	AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }
 private:
 	float LastNoiseTime;
 	float SprintingSpeedModifier;
@@ -126,5 +130,9 @@ protected:
 		bool bShouldSprint = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Animations")
 		bool bIsJumpingToggled = false;
-	bool bAllowedToFire;
+	bool bAllowedToFire = true;
+
+	TSubclassOf<class AAI_Character> TeamClasses;
+
+
 };

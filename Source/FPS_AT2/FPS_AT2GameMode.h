@@ -13,6 +13,8 @@ class AFPS_AT2GameMode : public AGameModeBase
 
 public:
 	AFPS_AT2GameMode();
+
+	
 };
 
 
