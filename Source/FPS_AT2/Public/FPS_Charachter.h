@@ -17,6 +17,8 @@ public:
 		class USkeletalMeshComponent* Mesh3P;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FirstPersonCameraComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		class UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
 
 public:
 	// Sets default values for this character's properties

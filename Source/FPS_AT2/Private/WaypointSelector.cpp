@@ -17,14 +17,14 @@ EBTNodeResult::Type UWaypointSelector::ExecuteTask(UBehaviorTreeComponent& Owner
 	auto route = ControlledPawn->FindComponentByClass<UPatrolComponent>();
 	if (!route)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Patrol route not  found"));
+		UE_LOG(LogTemp, Warning, TEXT("Patrol route not  found"));
 		return EBTNodeResult::Failed;
 
 	}
 	auto waypoints = route->GetWaypoints();
 	if (waypoints.Num() == 0)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("%s missing waypoints"), *(AIController->GetName()));
+		UE_LOG(LogTemp, Warning, TEXT("%s missing waypoints"), *(AIController->GetName()));
 		return EBTNodeResult::Failed;
 	}
 
@@ -34,11 +34,6 @@ EBTNodeResult::Type UWaypointSelector::ExecuteTask(UBehaviorTreeComponent& Owner
 	//cycle index;
 	index = (index + 1) % waypoints.Num();
 	Blackboard->SetValueAsInt(Keys.SelectedKeyName, index);
-
-	UE_LOG(LogTemp, Error, TEXT("Blyat at uwaypointselector"));
-
-
-
 	UE_LOG(LogTemp, Warning, TEXT("waypointselector at %s - %d"), *(Blackboard->GetKeyName(2).ToString()), index);
 	return EBTNodeResult::Succeeded;
 }

@@ -8,4 +8,5 @@ AAI_Character::AAI_Character()
 {
 	AIControllerClass = ANPC_AI_Controller::StaticClass();
 	bUseControllerRotationYaw = true;
+
 }

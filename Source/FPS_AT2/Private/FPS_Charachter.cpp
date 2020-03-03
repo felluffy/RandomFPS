@@ -10,6 +10,7 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "WeaponBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "FPS_AT2PlayerController.h"
@@ -47,6 +48,9 @@ AFPS_Charachter::AFPS_Charachter()
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
 	HealthComp->SetAutoActivate(true);
+
+	PerceptionStimuliSourceComponent = CreateDefaultSubobject< UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComponent"));
+	PerceptionStimuliSourceComponent->SetAutoActivate(true);
 
 	MovementComponent = FindComponentByClass<UCharacterMovementComponent>();
 	MovementComponent->MaxWalkSpeedCrouched = 200;
@@ -219,6 +223,7 @@ void AFPS_Charachter::StopFire()
 
 void AFPS_Charachter::NextWeapon()
 {
+	UE_LOG(LogTemp, Warning, TEXT("on Next weapon"));
 	if (Inventory.Num() > 1)
 	{
 		int32 Index = (Inventory.Find(CurrentWeapon, Index) + 1) % Inventory.Num();
