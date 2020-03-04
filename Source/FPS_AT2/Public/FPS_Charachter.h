@@ -88,7 +88,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 		class UHealthComponent* HealthComp;
 	UFUNCTION(BlueprintCallable)
-		void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+		virtual void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 	UPROPERTY(BlueprintReadOnly, Category = "Health")
 		bool bInactive = false;
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)

@@ -79,6 +79,9 @@ private:
 
 	FTimerHandle TimerHandle_fIntervalShootingTime, TimerHandle_fReloadTime;
 	void GiveAmmo(int AddAmount);
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float fWeaponRange = 5000;
 public:
 	void SetOwningPawn(class AFPS_Charachter* NewOwner);
 	void AttachMeshToPawn();
