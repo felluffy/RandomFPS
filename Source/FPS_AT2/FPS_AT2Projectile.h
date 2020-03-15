@@ -19,6 +19,9 @@ class AFPS_AT2Projectile : public AActor
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	class UProjectileMovementComponent* ProjectileMovement;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		class UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
+
 public:
 	AFPS_AT2Projectile();
 

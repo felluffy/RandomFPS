@@ -9,6 +9,10 @@
 /**
  * 
  */
+
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(CallAssistance, UHealthComponent*, HealthComponent, float, Health, float, HealthDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE(CallAssistace)
+
 UCLASS()
 class FPS_AT2_API AFPS_AT2PlayerController : public APlayerController
 {
@@ -18,6 +22,21 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 public:
+	//UPROPERTY(BlueprintAssignable, Category = "Events")
+	//	FOnCallAssistance CallAssistance_NPCs;
 	bool CommandMove(FVector &WorldPosition);
-	TArray<class ANPC_AI_Controller*> NPCs;
+	void CallAssistance();
+	void DefendAt(FVector &WorldPosition);
+	void AttackTargettedEnenmy(class AFPS_Charachter* EnemyChar);
+	void RegisterBot(int index);
+	//void 
+	//void 
+
+	TArray<class ANPC_AI_Controller*> NPCs, RegisterredControllers;
+
+
+	void OnToggleInGameMenu();
+	void OnToggleScoreBoard();
+	void OnHideScoreBoard();
+
 };

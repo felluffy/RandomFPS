@@ -92,6 +92,11 @@ public:
 	void Reload();
 	void OnLeaveInventory();
 
+	//Which to fire from, FP, or 3P
+	bool IsFirstPerson = true;
+
+	void DroppedOnWorld();
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
 	int16 MaxAmmo;
@@ -99,8 +104,8 @@ private:
 	int16 MagazineAmmoCapacity;
 	int16 CurrentAmmoInMagazine;
 	int16 CurrentAmmo;
-
 	bool CanFire();
+	bool bEquipped = false;
 	//FName ShellExitSocket = TEXT("ShellExit");
 
 protected:

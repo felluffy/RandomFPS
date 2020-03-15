@@ -23,3 +23,33 @@ bool AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
 	}
 	return false;
 }
+
+void AFPS_AT2PlayerController::RegisterBot(int index)
+{
+	if (RegisterredControllers.IsValidIndex(index))
+		RegisterredControllers.Remove(NPCs[index]);
+	else
+		RegisterredControllers.Add(NPCs[index]);
+}
+
+
+	//void AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
+	//{
+	//
+	//}
+
+void AFPS_AT2PlayerController::CallAssistance()
+{
+
+}
+
+void DefendAt(FVector &WorldPosition)
+{
+
+}
+
+void AFPS_AT2PlayerController::AttackTargettedEnenmy(AFPS_Charachter* EnemyChar)
+{
+
+}
+

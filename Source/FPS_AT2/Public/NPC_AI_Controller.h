@@ -25,4 +25,14 @@ private:
 protected: 
 		virtual void OnPossess(class APawn* InPawn) override;
 
+protected:
+	UPROPERTY(EditAnywhere, Category = "AI")
+	bool IsPlayerCommanded;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	bool NeedAssistance;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	bool HasLOSToEnemy;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	bool ShouldSwapWeapons;
+	void CallAssistance();
 };

@@ -43,6 +43,14 @@ AWeaponBase::AWeaponBase()
 	TP_Gun->SetupAttachment(FP_Gun);
 }
 
+void AWeaponBase::DroppedOnWorld()
+{
+	FP_Gun->SetSimulatePhysics(true);
+	FP_Gun->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	FP_Gun->AddTorqueInRadians(FVector(1, 1, 1) * 4000000);
+
+}
+
 // Called when the game starts or when spawned
 void AWeaponBase::BeginPlay()
 {
@@ -63,6 +71,7 @@ void AWeaponBase::BeginPlay()
 void AWeaponBase::OnFire()
 {
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *ProjectileClass->GetName());
+	if(bAllowedToFire)
 	if (ProjectileClass != NULL)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
@@ -74,8 +83,15 @@ void AWeaponBase::OnFire()
 				UE_LOG(LogTemp, Warning, TEXT("FIRING"));
 				//const FRotator SpawnRotation = FP_MuzzleLocation->GetComponentRotation();
 				const FRotator SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
-				// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-				const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+				FVector SpawnLocation;
+				if(IsFirstPerson)
+				{
+					// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+					SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+				}
+
+				//else 
+					//const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
 				//Set Spawn Collision Handling Override
 				FActorSpawnParameters ActorSpawnParams;
@@ -117,7 +133,7 @@ void AWeaponBase::WeaponFire()
 void AWeaponBase::StartFire()
 {
 	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
-
+	
 	GetWorldTimerManager().SetTimer(TimerHandle_fIntervalShootingTime, this, &AWeaponBase::OnFire, fIntervalShootingTime, true, FirstDelay);
 }
 
@@ -151,6 +167,8 @@ void AWeaponBase::AttachMeshToPawn()
 		TP_Gun->SetHiddenInGame(false);
 		FP_Gun->SetOnlyOwnerSee(true);
 		TP_Gun->SetOwnerNoSee(true);
+		
+		
 		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 		TP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 	}
@@ -159,12 +177,17 @@ void AWeaponBase::AttachMeshToPawn()
 void AWeaponBase::Unequip()
 {
 	FP_Gun->SetHiddenInGame(true);
+	TP_Gun->SetHiddenInGame(true);
+	bAllowedToFire = false;
 	StopFire();
 }
 
 void AWeaponBase::Equip()
 {
 	FP_Gun->SetHiddenInGame( false );
+	TP_Gun->SetHiddenInGame(false);
+	bAllowedToFire = true;
+	AttachMeshToPawn();
 }
 
 void AWeaponBase::Reload()
@@ -173,7 +196,7 @@ void AWeaponBase::Reload()
 	if (CurrentAmmoInMagazine == MagazineAmmoCapacity || CurrentAmmo <= 0)
 		return;
 	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
-
+	
 	GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, 1.0f, false);
 
 	GetWorldTimerManager().ClearTimer(TimerHandle_fIntervalShootingTime);

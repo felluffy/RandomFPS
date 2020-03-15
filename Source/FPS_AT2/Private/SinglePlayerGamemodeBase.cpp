@@ -21,10 +21,12 @@ void ASinglePlayerGamemodeBase::CreateBotControllers()
 		if(AIC)
 		{
 			//CreateBot()
+			AFPS_Charachter* OwnedCharachter = Cast<AFPS_Charachter>(AIC->GetPawn());
 			ExistingBots++;
-			if (PlayerController)
+			if (OwnedCharachter && PlayerController)
 			{
-				PlayerController->NPCs.Add(AIC);
+				if(OwnedCharachter->TeamNumber == Cast<AFPS_Charachter>(PlayerController->GetPawn())->TeamNumber)
+					PlayerController->NPCs.Add(AIC);
 			}
 		}
 	}

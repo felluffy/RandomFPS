@@ -69,6 +69,10 @@ protected:
 	void StartSprinting();
 	void StopSprinting();
 	void CommandBot();
+	void CommandBot_1();
+	void CommandBot_2();
+	void CommandBot_3();
+	void CommandBot_4();
 
 public:	
 
@@ -93,6 +97,19 @@ public:
 		bool bInactive = false;
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)
 		FName WeaponAttachPoint = TEXT("GripPoint");
+
+	UPROPERTY(BlueprintReadOnly, Category = "Locomotion")
+		bool IsSprinting = false;
+	UPROPERTY(BlueprintReadOnly, Category = "Weapons")
+		bool IsFiring = false;
+	UPROPERTY(BlueprintReadOnly, Category = "Locomotion")
+		bool IsProning = false;
+	UPROPERTY(BlueprintReadOnly, Category = "Locomotion")
+		bool IsCrouching = false;
+
+
+
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)
@@ -111,7 +128,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapons")
 	float DropWeaponMaxDistance;
 	void Reload();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void StartFire();
+	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void StopFire();
 	void NextWeapon();
 	void PreviousWeapon();
@@ -122,6 +142,8 @@ protected:
 public: 
 	//UPROPERTY(BlueprintCallable, Category = "Weapons")
 	//	AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }
+
+
 private:
 	float LastNoiseTime;
 	float SprintingSpeedModifier;
@@ -136,5 +158,7 @@ protected:
 
 	TSubclassOf<class AAI_Character> TeamClasses;
 
-
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Multiplayer")
+		uint8 TeamNumber = 0;
 };

@@ -14,7 +14,7 @@ ANPC_AI_Controller::ANPC_AI_Controller()
 	//BlackboardComp = CreateDefaultSubobject<UBlackboardComponent>(this, TEXT("BlackBoardComp"));
 
 	//BehaviorComp = CreateDefaultSubobject<UBehaviorTreeComponent>(this, TEXT("BehaviorComp"));
-	bWantsPlayerState = true;
+	//bWantsPlayerState = true;
 
 	BlackboardComp = CreateDefaultSubobject<UBlackboardComponent>(TEXT("BlackBoardComponent"));
 	BehaviorComp = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorComp"));

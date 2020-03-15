@@ -66,12 +66,20 @@ void AFPS_Charachter::BeginPlay()
 {
 	Super::BeginPlay();
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
-	if(DefaultWeaponClasses.Num() >= 0)
+	if(DefaultWeaponClasses.Num() > 0)
 	{
-		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
+		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[1]);
 		CurrentWeapon->SetOwningPawn(this);
 		CurrentWeapon->AttachMeshToPawn();
-		//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
+		FActorSpawnParameters SpawnInfo;
+		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		Inventory.Add(CurrentWeapon);
+		if (DefaultWeaponClasses.Num() > 1)
+		{
+			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0], SpawnInfo));
+			Inventory[1]->SetOwningPawn(this);
+		}
+			//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
 		
 	}
 
@@ -115,15 +123,16 @@ void AFPS_Charachter::LookUpAtRate(float Rate)
 
 void AFPS_Charachter::EquipWeapon(AWeaponBase* Weapon)
 {
+
 	if(Weapon && Weapon != CurrentWeapon)
 	{
 		SetCurrentWeapon(CurrentWeapon, Weapon);
 	}
 }
 
-void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, class AWeaponBase* NewWeapon)
+void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, AWeaponBase* NewWeapon)
 {
-	if (PreviousWeapon == nullptr || PreviousWeapon == NewWeapon)
+	if (PreviousWeapon == nullptr || PreviousWeapon != NewWeapon)
 	{
 		CurrentWeapon = NewWeapon;
 	}
@@ -137,7 +146,7 @@ void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, class AWeapo
 void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 {
 	//@TODO Drop weapon upon pressing F
-	if(Inventory.Num() < 1)
+	if(Inventory.Num() <= 1)
 		return;
 	if(!Weapon)
 		return;
@@ -167,8 +176,9 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 			SpawnLocation = LinetraceEnd;
 		FActorSpawnParameters SpawnParams;
 		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+		NewWeapon->DroppedOnWorld();
 	}
-	
+	Inventory.Remove(Weapon);
 	SetCurrentWeapon(CurrentWeapon, Inventory[0]);
 
 	Weapon->Destroy();
@@ -224,9 +234,13 @@ void AFPS_Charachter::StopFire()
 void AFPS_Charachter::NextWeapon()
 {
 	UE_LOG(LogTemp, Warning, TEXT("on Next weapon"));
+	UE_LOG(LogTemp, Warning, TEXT("%d - %d"), Inventory.Num(), DefaultWeaponClasses.Num());
 	if (Inventory.Num() > 1)
 	{
-		int32 Index = (Inventory.Find(CurrentWeapon, Index) + 1) % Inventory.Num();
+		int32 Index;
+		Inventory.Find(CurrentWeapon, Index);
+			Index = (Index + 1) % Inventory.Num();
+		UE_LOG(LogTemp, Warning, TEXT("%d CRAZY FUDGE"), Index);
 		EquipWeapon(Inventory[Index]);
 	}
 }
@@ -235,7 +249,9 @@ void AFPS_Charachter::PreviousWeapon()
 {
 	if (Inventory.Num() > 1)
 	{
-		int32 Index = (Inventory.Find(CurrentWeapon, Index) - 1 + Inventory.Num()) % Inventory.Num();
+		int32 Index;
+		Inventory.Find(CurrentWeapon, Index);
+			Index = (Index - 1 + Inventory.Num()) % Inventory.Num();
 		EquipWeapon(Inventory[Index]);
 	}
 }
@@ -250,13 +266,13 @@ bool AFPS_Charachter::CanFire()
 
 void AFPS_Charachter::BeginCrouch()
 {
-	CurrentWeapon->Unequip();
+	//CurrentWeapon->Unequip();
 	Crouch();
 }
 
 void AFPS_Charachter::EndCrouch()
 {
-	CurrentWeapon->Equip();
+	//CurrentWeapon->Equip();
 	UnCrouch();
 }
 
@@ -281,7 +297,8 @@ void AFPS_Charachter::StartSprinting()
 {
 	if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .1f)
 		MovementComponent->MaxWalkSpeed = 200;
-	MovementComponent->MaxWalkSpeed = 600;
+	MovementComponent->MaxWalkSpeed = 800;
+	IsSprinting = true;
 	bShouldSprint = true;
 	StopFire();
 	bAllowedToFire = false;
@@ -292,6 +309,7 @@ void AFPS_Charachter::StopSprinting()
 {
 	bShouldSprint = false;
 	bAllowedToFire = true;
+	IsSprinting = false;
 }
 
 void AFPS_Charachter::CommandBot()
@@ -319,6 +337,41 @@ void AFPS_Charachter::CommandBot()
 	}
 }
 
+void AFPS_Charachter::CommandBot_1()
+{
+	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->RegisterBot(0);
+	}
+}
+void AFPS_Charachter::CommandBot_2()
+{
+	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->RegisterBot(1);
+	}
+
+}
+void AFPS_Charachter::CommandBot_3()
+{
+	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->RegisterBot(2);
+	}
+}
+void AFPS_Charachter::CommandBot_4()
+{
+	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->RegisterBot(3);
+	}
+}
+
+
 // Called to bind functionality to input
 void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -337,7 +390,11 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AFPS_Charachter::StartSprinting);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AFPS_Charachter::StopSprinting);
 	PlayerInputComponent->BindAction("Drop_Item", IE_Pressed, this, &AFPS_Charachter::OnDropWeapon);
-	PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
+	PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot_1);
+	PlayerInputComponent->BindAction("TEST_COMMAND_2", IE_Pressed, this, &AFPS_Charachter::CommandBot_2);
+	PlayerInputComponent->BindAction("TEST_COMMAND_3", IE_Pressed, this, &AFPS_Charachter::CommandBot_3);
+	PlayerInputComponent->BindAction("TEST_COMMAND_4", IE_Pressed, this, &AFPS_Charachter::CommandBot_4);
+	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);
 	PlayerInputComponent->BindAction("PreviousItem", IE_Pressed, this, &AFPS_Charachter::PreviousWeapon);
 	//@TODO: NEXT WEAPON AND PREVIOUS WEAPON SETUP SUING MOUSE WHEEL
