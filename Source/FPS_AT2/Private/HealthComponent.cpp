@@ -3,6 +3,8 @@
 #include "HealthComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Actor.h"
+#include "FPS_Charachter.h"
+#include "GameFramework/PlayerController.h"
 
 
 // Sets default values for this component's properties
@@ -40,6 +42,9 @@ void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const 
 	{
 		return;
 	}
+	AFPS_Charachter* Damaged = Cast<AFPS_Charachter>(DamagedActor), *Instigator = Cast<AFPS_Charachter>(InstigatedBy->GetPawn());
+	//if (Damaged && Instigator && Damaged->TeamNumber == Instigator->TeamNumber)
+	//	Damage *= .1;
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
 	UE_LOG(LogTemp, Log, TEXT("Health at %f"), CurrentHealth);
 

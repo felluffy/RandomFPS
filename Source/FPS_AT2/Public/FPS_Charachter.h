@@ -159,6 +159,12 @@ protected:
 	TSubclassOf<class AAI_Character> TeamClasses;
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Multiplayer")
+	UPROPERTY(EditAnywhere, Category = "Multiplayer")
 		uint8 TeamNumber = 0;
+	void OrderAIAttack();
+	void OrderFollow();
+	void OrderGuard();
+	void OrderDismiss();
+	void OrderCallAssistance();
+	class AFPS_AT2PlayerController* PlayerController_AFPS2;
 };

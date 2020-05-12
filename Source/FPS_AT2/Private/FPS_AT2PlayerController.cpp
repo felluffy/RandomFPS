@@ -33,7 +33,17 @@ void AFPS_AT2PlayerController::RegisterBot(int index)
 }
 
 
-	//void AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
+void AFPS_AT2PlayerController::Test()
+{
+	//for (int i = 0; i != RegisterredControllers.Num(); i++)
+	{
+		//UE_LOG(LogTemp, Error, TEXT("%s reporting"), *(RegisterredControllers[i]->GetPawn()->GetName()));
+	}
+	UE_LOG(LogTemp, Error, TEXT("%d reporting"), RegisterredControllers.Num());
+
+}
+
+//void AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
 	//{
 	//
 	//}

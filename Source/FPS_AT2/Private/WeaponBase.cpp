@@ -19,7 +19,7 @@
 AWeaponBase::AWeaponBase()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
 	TP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("TP_Gun"));
 	RootComponent = FP_Gun;
@@ -28,19 +28,37 @@ AWeaponBase::AWeaponBase()
 	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 	FP_Gun->SetOnlyOwnerSee(true);
-	FP_Gun->bCastDynamicShadow = true;
-	FP_Gun->CastShadow = true;
+	FP_Gun->bCastDynamicShadow = false;
+	FP_Gun->CastShadow = false;
 	FP_Gun->SetCollisionObjectType(ECC_WorldDynamic);
 	FP_Gun->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	FP_Gun->SetCollisionResponseToAllChannels(ECR_Ignore);
+	FP_Gun->SetHiddenInGame(true);
+
+
+
 	TP_Gun->SetOnlyOwnerSee(false);
 	TP_Gun->bCastDynamicShadow = true;
 	TP_Gun->CastShadow = true;
 	TP_Gun->SetCollisionObjectType(ECC_WorldDynamic);
 	TP_Gun->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TP_Gun->SetCollisionResponseToAllChannels(ECR_Ignore);
+	TP_Gun->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	//SetReplicates(true);
 	TP_Gun->SetupAttachment(FP_Gun);
+	TP_Gun->SetHiddenInGame(true);
+
+	//Networking here
+}
+
+void AWeaponBase::Tick(float DeltaTime)
+{
+	
+	if (bRecoil)
+	{
+		Owner->AddControllerPitchInput(CurrentRecPitch * DeltaTime * RecoilTimeModifier);
+		Owner->AddControllerYawInput(CurrentRecYaw* DeltaTime * RecoilTimeModifier);
+	}
 }
 
 void AWeaponBase::DroppedOnWorld()
@@ -61,28 +79,42 @@ void AWeaponBase::BeginPlay()
 	if (GetOwner() != NULL)
 	{
 		auto name = *GetOwner()->GetName();
-		UE_LOG(LogTemp, Warning, TEXT("%s is the owner"), *name);
+		//UE_LOG(LogTemp, Warning, TEXT("%s is the owner"), *name);
 		
 	}
-	UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
+	//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 
 }
 
 void AWeaponBase::OnFire()
 {
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *ProjectileClass->GetName());
-	if(bAllowedToFire)
+	if(bAllowedToFire && Owner)
 	if (ProjectileClass != NULL)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
+		//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 		UWorld* const World = GetWorld();
 		if (World != NULL)
 		{
 			if (CurrentAmmoInMagazine) // can fire
 			{
-				UE_LOG(LogTemp, Warning, TEXT("FIRING"));
+				//UE_LOG(LogTemp, Warning, TEXT("FIRING"));
 				//const FRotator SpawnRotation = FP_MuzzleLocation->GetComponentRotation();
-				const FRotator SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
+				bRecoil = false;
+				FRotator SpawnRotation;
+
+				auto Velocity = Owner->GetVelocity();
+				auto Clamped = ClampVector(Velocity, FVector(0.0), FVector(1.0));
+				auto VectorSize = Clamped.Size();
+				
+				FVector SpreadAdjustment = (FVector(FMath::RandRange(-Spread, Spread) * VectorSize, FMath::RandRange(-Spread, Spread) * VectorSize, 0.0));
+		
+				SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation() + SpreadAdjustment.ToOrientationRotator();;
+				//auto c = 
+				auto Rot = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
+				auto Rot2 = SpreadAdjustment.ToOrientationRotator();
+				UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_SPAWNRO %f %f %f"), Rot2.Yaw, Rot2.Pitch, Rot2.Roll);
+				UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_CAMERA %f %f %f"), Rot.Yaw, Rot.Pitch, Rot.Roll);
 				FVector SpawnLocation;
 				if(IsFirstPerson)
 				{
@@ -100,6 +132,13 @@ void AWeaponBase::OnFire()
 				// spawn the projectile at the muzzle
 				World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 				CurrentAmmoInMagazine--;
+				if (CurrentAmmoInMagazine == 0)
+					bAllowedToFire = false;
+
+				//Add Recoil
+
+				OnRecoil();
+
 				if (ensure(FireSound))
 				{
 					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
@@ -116,6 +155,17 @@ void AWeaponBase::OnFire()
 			}
 		}
 	}
+}
+
+
+void AWeaponBase::OnRecoil()
+{
+	//Owner->AddControllerPitchInput(FMath::RandRange(RandomRecoilPitchLow, RandomRecoilPitchHigh));
+	//Owner->AddControllerYawInput(FMath::RandRange(RandomRecoilYawLow, RandomRecoilYawHigh));
+	CurrentRecPitch = FMath::RandRange(RandomRecoilPitchLow, RandomRecoilPitchHigh);
+	CurrentRecYaw = FMath::RandRange(RandomRecoilYawLow, RandomRecoilYawHigh);
+	bRecoil = true;
+		
 }
 
 bool AWeaponBase::CanFire()
@@ -141,6 +191,8 @@ void AWeaponBase::StartFire()
 void AWeaponBase::StopFire()
 {
 	GetWorldTimerManager().ClearTimer(TimerHandle_fIntervalShootingTime);
+	bRecoil = false;
+	bAllowedToFire = false;
 }
 
 void AWeaponBase::SetOwningPawn(AFPS_Charachter* NewOwner)
@@ -192,17 +244,26 @@ void AWeaponBase::Equip()
 
 void AWeaponBase::Reload()
 {
+	StopFire();
+	
 	//reload conditions
 	if (CurrentAmmoInMagazine == MagazineAmmoCapacity || CurrentAmmo <= 0)
 		return;
 	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
 	
-	GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, 1.0f, false);
+	//GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, 5.0f, false);
+	GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, this, &AWeaponBase::ReloadWeapon, ReloadTime, false);
 
-	GetWorldTimerManager().ClearTimer(TimerHandle_fIntervalShootingTime);
+	//Play Reload Animation
 
+	
+
+}
+
+void AWeaponBase::ReloadWeapon()
+{
 	CurrentAmmo += CurrentAmmoInMagazine;
-	if(CurrentAmmo >= MagazineAmmoCapacity)
+	if (CurrentAmmo >= MagazineAmmoCapacity)
 		CurrentAmmoInMagazine = MagazineAmmoCapacity;
 	else
 		CurrentAmmoInMagazine = CurrentAmmo % (MagazineAmmoCapacity + 1);
@@ -211,4 +272,5 @@ void AWeaponBase::Reload()
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReloadSound, GetActorLocation());
 	}
+	bAllowedToFire = true;
 }

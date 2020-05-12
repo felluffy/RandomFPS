@@ -90,6 +90,8 @@ void AFPS_Charachter::BeginPlay()
 		//CurrentWeapon->attacht
 		//Mesh1P->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, it->WeaponAttachPoint);
 	}
+
+	PlayerController_AFPS2 = Cast<AFPS_AT2PlayerController>(GetController());
 }
 
 
@@ -264,6 +266,38 @@ bool AFPS_Charachter::CanFire()
 }
 
 
+void AFPS_Charachter::OrderAIAttack()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OrderAIAttack()"));
+	PlayerController_AFPS2->Test();
+}
+
+void AFPS_Charachter::OrderFollow()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OrderFollow()"));
+	PlayerController_AFPS2->Test();
+}
+
+void AFPS_Charachter::OrderGuard()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OrderGuard()"));
+	PlayerController_AFPS2->Test();
+
+}
+
+void AFPS_Charachter::OrderDismiss()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OrderDismiss()"));
+	PlayerController_AFPS2->Test();
+}
+
+
+void AFPS_Charachter::OrderCallAssistance()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OrderCallAssistance()"));
+	PlayerController_AFPS2->Test();
+}
+
 void AFPS_Charachter::BeginCrouch()
 {
 	//CurrentWeapon->Unequip();
@@ -317,8 +351,8 @@ void AFPS_Charachter::CommandBot()
 	//Get all bots;
 	//UGameplayStatics::GetAllActorsOfClass(GetWorld)
 	//UGameplayStatics::GetAllActorsOfClas
-	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
-	if (PlayerController)
+	
+	if (PlayerController_AFPS2)
 	{
 		//line trace
 		FHitResult Hit;
@@ -333,95 +367,46 @@ void AFPS_Charachter::CommandBot()
 		}
 		UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
 		
-		PlayerController->CommandMove(fv);
+		PlayerController_AFPS2->CommandMove(fv);
 	}
 }
 
 void AFPS_Charachter::CommandBot_1()
 {
-	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
-	if (PlayerController)
+	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController_AFPS2)
 	{
-		PlayerController->RegisterBot(0);
+		PlayerController_AFPS2->RegisterBot(0);
 	}
 }
 void AFPS_Charachter::CommandBot_2()
 {
-	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
-	if (PlayerController)
+	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController_AFPS2)
 	{
-		PlayerController->RegisterBot(1);
+		PlayerController_AFPS2->RegisterBot(1);
 	}
 
 }
 void AFPS_Charachter::CommandBot_3()
 {
-	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
-	if (PlayerController)
+	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController_AFPS2)
 	{
-		PlayerController->RegisterBot(2);
+		PlayerController_AFPS2->RegisterBot(2);
 	}
 }
 void AFPS_Charachter::CommandBot_4()
 {
-	AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
-	if (PlayerController)
+	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController_AFPS2)
 	{
-		PlayerController->RegisterBot(3);
+		PlayerController_AFPS2->RegisterBot(3);
 	}
 }
 
 
-// Called to bind functionality to input
-void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	// Bind jump events
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AFPS_Charachter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AFPS_Charachter::StopJumping);
 
-	// Bind fire event
-	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AFPS_Charachter::BeginCrouch);
-	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AFPS_Charachter::EndCrouch);
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_Charachter::StartFire);
-	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AFPS_Charachter::StopFire);
-	PlayerInputComponent->BindAction("Reload", IE_Released, this, &AFPS_Charachter::Reload);
-	PlayerInputComponent->BindAction("Suicide", IE_Pressed, this, &AFPS_Charachter::Suicide);
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AFPS_Charachter::StartSprinting);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AFPS_Charachter::StopSprinting);
-	PlayerInputComponent->BindAction("Drop_Item", IE_Pressed, this, &AFPS_Charachter::OnDropWeapon);
-	PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot_1);
-	PlayerInputComponent->BindAction("TEST_COMMAND_2", IE_Pressed, this, &AFPS_Charachter::CommandBot_2);
-	PlayerInputComponent->BindAction("TEST_COMMAND_3", IE_Pressed, this, &AFPS_Charachter::CommandBot_3);
-	PlayerInputComponent->BindAction("TEST_COMMAND_4", IE_Pressed, this, &AFPS_Charachter::CommandBot_4);
-	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
-	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);
-	PlayerInputComponent->BindAction("PreviousItem", IE_Pressed, this, &AFPS_Charachter::PreviousWeapon);
-	//@TODO: NEXT WEAPON AND PREVIOUS WEAPON SETUP SUING MOUSE WHEEL
-	//@TODO: DROP WITH G
-	//@TODO: EQUIP WITH E IF LINE TRACE
-
-	// Enable touchscreen input
-	//EnableTouchscreenMovement(PlayerInputComponent);
-
-	//PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AFPS_AT2Character::OnResetVR);
-
-	// Bind movement events
-	PlayerInputComponent->BindAxis("MoveForward", this, &AFPS_Charachter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AFPS_Charachter::MoveRight);
-
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AFPS_Charachter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AFPS_Charachter::LookUpAtRate);
-
-
-	//PlayerInputComponent->BindAxis("TEST_COMMAND_1", this, &AFPS_Charachter::CommandBot);
-
-}
 
 void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
@@ -463,5 +448,63 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 
 	//@TODO: pick up based on what's seen throiugh linetrace from eye to dropped equipment
 
+
+}
+
+
+// Called to bind functionality to input
+void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	// Bind jump events
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AFPS_Charachter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AFPS_Charachter::StopJumping);
+
+	// Bind fire event
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AFPS_Charachter::BeginCrouch);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AFPS_Charachter::EndCrouch);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_Charachter::StartFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AFPS_Charachter::StopFire);
+	PlayerInputComponent->BindAction("Reload", IE_Released, this, &AFPS_Charachter::Reload);
+	PlayerInputComponent->BindAction("Suicide", IE_Pressed, this, &AFPS_Charachter::Suicide);
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AFPS_Charachter::StartSprinting);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AFPS_Charachter::StopSprinting);
+	PlayerInputComponent->BindAction("Drop_Item", IE_Pressed, this, &AFPS_Charachter::OnDropWeapon);
+	PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot_1);
+	PlayerInputComponent->BindAction("TEST_COMMAND_2", IE_Pressed, this, &AFPS_Charachter::CommandBot_2);
+	PlayerInputComponent->BindAction("TEST_COMMAND_3", IE_Pressed, this, &AFPS_Charachter::CommandBot_3);
+	PlayerInputComponent->BindAction("TEST_COMMAND_4", IE_Pressed, this, &AFPS_Charachter::CommandBot_4);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AFPS_Charachter::OrderAIAttack);
+	PlayerInputComponent->BindAction("Guard", IE_Pressed, this, &AFPS_Charachter::OrderGuard);
+	PlayerInputComponent->BindAction("Follow", IE_Pressed, this, &AFPS_Charachter::OrderFollow);
+	PlayerInputComponent->BindAction("CallAssistance", IE_Pressed, this, &AFPS_Charachter::OrderCallAssistance);
+	PlayerInputComponent->BindAction("Dismiss", IE_Pressed, this, &AFPS_Charachter::OrderDismiss);
+
+	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
+	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);
+	PlayerInputComponent->BindAction("PreviousItem", IE_Pressed, this, &AFPS_Charachter::PreviousWeapon);
+	//@TODO: NEXT WEAPON AND PREVIOUS WEAPON SETUP SUING MOUSE WHEEL
+	//@TODO: DROP WITH G
+	//@TODO: EQUIP WITH E IF LINE TRACE
+
+	// Enable touchscreen input
+	//EnableTouchscreenMovement(PlayerInputComponent);
+
+	//PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AFPS_AT2Character::OnResetVR);
+
+	// Bind movement events
+	PlayerInputComponent->BindAxis("MoveForward", this, &AFPS_Charachter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AFPS_Charachter::MoveRight);
+
+	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
+	// "turn" handles devices that provide an absolute delta, such as a mouse.
+	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
+	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("TurnRate", this, &AFPS_Charachter::TurnAtRate);
+	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AFPS_Charachter::LookUpAtRate);
+
+
+	//PlayerInputComponent->BindAxis("TEST_COMMAND_1", this, &AFPS_Charachter::CommandBot);
 
 }

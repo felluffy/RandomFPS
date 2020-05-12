@@ -38,8 +38,20 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void PlayParticle();
+	UFUNCTION(BlueprintCallable)
+		void ApplyDecal();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 		class UParticleSystem* ImpactParticle = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	class UParticleSystemComponent* TrailParticleComp = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = Components)
+	TArray<UDecalComponent*> BulletImpactHoles;
+public:
+	class AFPS_Charachter* Instigator;
+
+protected:
+	bool bIsExplosive = false;
+	float fDamage = 30.0f;
 };

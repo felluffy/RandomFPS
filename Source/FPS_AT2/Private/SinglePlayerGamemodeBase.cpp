@@ -11,6 +11,14 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
+void ASinglePlayerGamemodeBase::DestroyActorFunction()
+{
+	if (Spawned_Character)
+	{
+		Spawned_Character->Destroy();
+	}
+}
+
 void ASinglePlayerGamemodeBase::CreateBotControllers()
 {
 	UWorld* World = GetWorld();
@@ -56,5 +64,13 @@ ANPC_AI_Controller* ASinglePlayerGamemodeBase::CreateBot(int32 BotNum)
 void ASinglePlayerGamemodeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UWorld* World = GetWorld();
+	FTransform SpawnLocation = FTransform({}, { 0, 0, 50 }, { 0, 0, 0 }, FVector::OneVector);
+	FActorSpawnParameters SpawnParams;
+	Spawned_Character = World->SpawnActor<AFPS_Charachter>(AFPS_Charachter::StaticClass(), { 0,0,50 }, { 0,0,0 });
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *Spawned_Character->GetName());
 	CreateBotControllers();
+	FTimerHandle Timer;
+	//GetWorldTimerManager().SetTimer(Timer, this, &ASinglePlayerGamemodeBase::DestroyActorFunction, 10);
 }

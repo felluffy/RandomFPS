@@ -26,7 +26,12 @@ public:
 
 	UPROPERTY()
 		TArray<class ANPC_AI_Controller*> BotControllers;
+	
+	UPROPERTY()
+	class AFPS_Charachter* Spawned_Character;
 
+	UFUNCTION()
+	void DestroyActorFunction();
 	//virtual void StartMatch();
 
 public:

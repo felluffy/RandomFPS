@@ -5,6 +5,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/DamageType.h"
@@ -21,6 +22,13 @@ ABullet::ABullet()
 	// Players can't walk on it
 	CollisionComp->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
 	CollisionComp->CanCharacterStepUpOn = ECB_No;
+	
+
+	CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	CollisionComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	CollisionComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 
 	// Set as root component
 	RootComponent = CollisionComp;
@@ -33,9 +41,13 @@ ABullet::ABullet()
 	ProjectileMovement->MaxSpeed = 30000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->ProjectileGravityScale = 0.1f;
 
 	// Die after 3 seconds by default
 	InitialLifeSpan = 3.0f;
+	
+	//Weapon stats, change it to a class later
+	//fDamage = Damage;
 }
 
 void ABullet::BeginPlay()
@@ -46,15 +58,31 @@ void ABullet::BeginPlay()
 
 void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (TrailParticleComp)
+	{
+		TrailParticleComp->Deactivate();
+	}
+
 	// Only add impulse and destroy projectile if we hit a physics
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName());
 	//if ((OtherActor != NULL) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
+	if ((OtherActor != NULL) && (OtherComp != NULL))
 	{
-		OtherComp->AddImpulseAtLocation(GetVelocity() * 10.0f, GetActorLocation());
+		//OtherComp->AddImpulseAtLocation(GetVelocity() * 10.0f, GetActorLocation());
 		FHitResult HitInfo;
-		UGameplayStatics::ApplyPointDamage(OtherActor, 30, GetActorLocation(), HitInfo, NULL, this, UDamageType::StaticClass());		
-		PlayParticle();
+// 		if(bIsExplosive)
+// 			UGameplayStatics::ApplyRadialDamageWithFalloff(GetWorld(), fDamage, 0, 
+		if(fDamage > 0)
+			UGameplayStatics::ApplyPointDamage(OtherActor, fDamage, GetActorLocation(), HitInfo, NULL, this, UDamageType::StaticClass());		
+		
+		
+		//@TODO Add decal on impact
+		//UGameplayStatics::SpawnDecalAtLocation(GetWorld(), )
+		
 	}
+	//DrawDebugSphere(GetWorld(), Hit.Location, 50, 6, FColor::White, false, 5.0f, 0, 5.0);
+	PlayParticle();
+
 	Destroy();
 }
 
@@ -62,4 +90,9 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 void ABullet::PlayParticle()
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle, FTransform(GetActorLocation()));
+}
+
+void ABullet::ApplyDecal()
+{
+	uint8 Index = FMath::RandRange(0, BulletImpactHoles.Num());
 }

@@ -38,5 +38,7 @@ public:
 	void OnToggleInGameMenu();
 	void OnToggleScoreBoard();
 	void OnHideScoreBoard();
+	void Test();
+
 
 };

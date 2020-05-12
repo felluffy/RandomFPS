@@ -37,6 +37,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void Tick (float DeltaSeconds) override;
+
 public:	
 	UFUNCTION(BlueprintCallable, Category = "Properties")
 		void OnFire();
@@ -77,7 +79,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
 		float fIntervalShootingTime = .2f;
 
-	FTimerHandle TimerHandle_fIntervalShootingTime, TimerHandle_fReloadTime;
+	FTimerHandle TimerHandle_fIntervalShootingTime, TimerHandle_fReloadTime, TimerHandle_fRecoilTime;
 	void GiveAmmo(int AddAmount);
 
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
@@ -90,6 +92,7 @@ public:
 	void Unequip();
 	void Equip();
 	void Reload();
+	void ReloadWeapon();
 	void OnLeaveInventory();
 
 	//Which to fire from, FP, or 3P
@@ -97,16 +100,43 @@ public:
 
 	void DroppedOnWorld();
 
-private:
+	protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
-	int16 MaxAmmo;
+	int32 MaxAmmo;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
-	int16 MagazineAmmoCapacity;
-	int16 CurrentAmmoInMagazine;
-	int16 CurrentAmmo;
+	int32 MagazineAmmoCapacity;
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
+	int32 CurrentAmmoInMagazine;
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
+	int32 CurrentAmmo;
 	bool CanFire();
 	bool bEquipped = false;
 	//FName ShellExitSocket = TEXT("ShellExit");
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float RandomRecoilYawHigh;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float RandomRecoilPitchHigh;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float RandomRecoilYawLow;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float RandomRecoilPitchLow;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float Spread;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float ReloadTime;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float RecoilTimeModifier;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	float WeaponDamage;
+
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Transient)
@@ -115,6 +145,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Transient)
 	class USoundBase* ReloadSound;
 
-
-
+private:
+	void OnRecoil();
+	float CurrentRecYaw, CurrentRecPitch;
+	bool bRecoil = false;
+	
 };
