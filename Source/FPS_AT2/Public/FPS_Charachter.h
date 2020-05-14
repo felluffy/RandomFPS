@@ -73,6 +73,7 @@ protected:
 	void CommandBot_2();
 	void CommandBot_3();
 	void CommandBot_4();
+	void OnPressedActionButton();
 
 public:	
 
@@ -125,6 +126,7 @@ protected:
 	void OnDropWeapon();
 	void RemoveWeapon(class AWeaponBase* Weapon);
 	void AddWeapon(class AWeaponBase* Weapon);
+	void AddWeaponToInventory(class AWeaponBase* Weapon);
 	UPROPERTY(EditDefaultsOnly, Category = "Weapons")
 	float DropWeaponMaxDistance;
 	void Reload();

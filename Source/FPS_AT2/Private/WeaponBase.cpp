@@ -47,8 +47,58 @@ AWeaponBase::AWeaponBase()
 	//SetReplicates(true);
 	TP_Gun->SetupAttachment(FP_Gun);
 	TP_Gun->SetHiddenInGame(true);
+	UE_LOG(LogTemp, Error, TEXT("Weapon cons called %s - %d - %d"), *GetName(), CurrentAmmo, CurrentAmmoInMagazine);
 
 	//Networking here
+}
+
+void AWeaponBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	FTimerHandle Timer;
+	GetWorldTimerManager().SetTimer(Timer, this, &AWeaponBase::DropOnWorld, .1, false);
+}
+
+
+void AWeaponBase::SetOwningPawn(AFPS_Charachter* NewOwner)
+{
+	if (Owner != NewOwner)
+	{
+		bAllowedToFire = true;
+		SetInstigator(NewOwner);
+		Owner = NewOwner;
+		// net owner for RPC calls
+		SetOwner(NewOwner);	
+		FP_Gun->SetOnlyOwnerSee(true);
+		FP_Gun->bCastDynamicShadow = false;
+		FP_Gun->CastShadow = false;
+		FP_Gun->SetCollisionObjectType(ECC_WorldDynamic);
+		FP_Gun->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		FP_Gun->SetCollisionResponseToAllChannels(ECR_Ignore);
+		FP_Gun->SetHiddenInGame(true);
+		this->SetActorTickEnabled(true);
+
+	}
+}
+
+void AWeaponBase::DropOnWorld()
+{
+	if (!Owner)
+	{
+		FP_Gun->SetCollisionObjectType(ECC_WorldStatic);
+		FP_Gun->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		FP_Gun->AddLocalRotation({ 3, 6, 6 });
+		FP_Gun->CastShadow = true;
+		//FP_Gun->SetCollisionResponseToAllChannels(ECR_Ignore);
+		FP_Gun->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+		FP_Gun->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+		FP_Gun->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		FP_Gun->SetHiddenInGame(false);
+		FP_Gun->SetSimulatePhysics(true);
+		FP_Gun->SetOnlyOwnerSee(false);
+		this->SetActorTickEnabled(false);
+		//DrawDebugSphere(GetWorld(), FP_Gun->GetComponentLocation(), 50, 8, FColor::Red, true, 10);
+	}
 }
 
 void AWeaponBase::Tick(float DeltaTime)
@@ -92,7 +142,7 @@ void AWeaponBase::OnFire()
 	if(bAllowedToFire && Owner)
 	if (ProjectileClass != NULL)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
+		UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 		UWorld* const World = GetWorld();
 		if (World != NULL)
 		{
@@ -130,7 +180,9 @@ void AWeaponBase::OnFire()
 				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 				// spawn the projectile at the muzzle
-				World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+				auto bbb = World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+				bbb->fDamage = this->WeaponDamage;
+				bbb->bIsExplosive = this->IsExplosive;
 				CurrentAmmoInMagazine--;
 				if (CurrentAmmoInMagazine == 0)
 					bAllowedToFire = false;
@@ -183,7 +235,6 @@ void AWeaponBase::WeaponFire()
 void AWeaponBase::StartFire()
 {
 	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
-	
 	GetWorldTimerManager().SetTimer(TimerHandle_fIntervalShootingTime, this, &AWeaponBase::OnFire, fIntervalShootingTime, true, FirstDelay);
 }
 
@@ -192,19 +243,8 @@ void AWeaponBase::StopFire()
 {
 	GetWorldTimerManager().ClearTimer(TimerHandle_fIntervalShootingTime);
 	bRecoil = false;
-	bAllowedToFire = false;
 }
 
-void AWeaponBase::SetOwningPawn(AFPS_Charachter* NewOwner)
-{
-	if (Owner != NewOwner)
-	{
-		SetInstigator(NewOwner);
-		Owner = NewOwner;
-		// net owner for RPC calls
-		SetOwner(NewOwner);
-	}
-}
 
 void AWeaponBase::AttachMeshToPawn()
 {
@@ -228,6 +268,7 @@ void AWeaponBase::AttachMeshToPawn()
 
 void AWeaponBase::Unequip()
 {
+	this->SetActorTickEnabled(false);
 	FP_Gun->SetHiddenInGame(true);
 	TP_Gun->SetHiddenInGame(true);
 	bAllowedToFire = false;
@@ -236,6 +277,7 @@ void AWeaponBase::Unequip()
 
 void AWeaponBase::Equip()
 {
+	this->SetActorTickEnabled(true);
 	FP_Gun->SetHiddenInGame( false );
 	TP_Gun->SetHiddenInGame(false);
 	bAllowedToFire = true;
@@ -273,4 +315,10 @@ void AWeaponBase::ReloadWeapon()
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReloadSound, GetActorLocation());
 	}
 	bAllowedToFire = true;
+}
+
+void AWeaponBase::SetCurrentAmmo(int32 _CurrentAmmo, int32 _CurrentAmmoInMagazine)
+{
+	this->CurrentAmmo = _CurrentAmmo;
+	this->CurrentAmmoInMagazine = _CurrentAmmoInMagazine;
 }

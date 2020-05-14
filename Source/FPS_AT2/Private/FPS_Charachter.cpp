@@ -10,8 +10,10 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
-#include "WeaponBase.h"
+#include "WeaponBase.h" 	
+#include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "FPS_AT2PlayerController.h"
 #include "GameFramework/DamageType.h"
@@ -68,7 +70,7 @@ void AFPS_Charachter::BeginPlay()
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
 	if(DefaultWeaponClasses.Num() > 0)
 	{
-		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[1]);
+		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
 		CurrentWeapon->SetOwningPawn(this);
 		CurrentWeapon->AttachMeshToPawn();
 		FActorSpawnParameters SpawnInfo;
@@ -76,10 +78,11 @@ void AFPS_Charachter::BeginPlay()
 		Inventory.Add(CurrentWeapon);
 		if (DefaultWeaponClasses.Num() > 1)
 		{
-			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0], SpawnInfo));
+			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[1], SpawnInfo));
 			Inventory[1]->SetOwningPawn(this);
 		}
 			//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
+		UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon"), *CurrentWeapon->WeaponName.ToString());
 		
 	}
 
@@ -168,6 +171,7 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		//line trace on where to drop
 		const FVector LinetraceStart = GetActorLocation();
 		const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
+		DrawDebugSphere(GetWorld(), LinetraceEnd, 10, 4, FColor::Red, true, 5);
 		
 		FHitResult Hit;
 		FCollisionQueryParams CollisionParams;
@@ -179,8 +183,10 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		FActorSpawnParameters SpawnParams;
 		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
 		NewWeapon->DroppedOnWorld();
+		NewWeapon->SetCurrentAmmo(CurrentWeapon->GetCurrentAmmo(), CurrentWeapon->GetCurrentAmmoInMagazine());
+		
 	}
-	Inventory.Remove(Weapon);
+	Inventory.Remove(CurrentWeapon);
 	SetCurrentWeapon(CurrentWeapon, Inventory[0]);
 
 	Weapon->Destroy();
@@ -222,6 +228,7 @@ void AFPS_Charachter::StartFire()
 	if (bAllowedToFire && CurrentWeapon)
 	{
 		CurrentWeapon->StartFire();
+		UE_LOG(LogTemp, Error, TEXT("%s"), *CurrentWeapon->WeaponName.ToString());
 	}
 }
 
@@ -405,6 +412,42 @@ void AFPS_Charachter::CommandBot_4()
 	}
 }
 
+void AFPS_Charachter::OnPressedActionButton()
+{
+	float Distance = 300.0f;
+	FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
+	FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+	FVector LineTraceEnd = LinetraceStart + (NormalRotation * Distance);
+	FVector HalfSize = FVector({ 10.0f });
+	TArray<FHitResult> Hits;
+	UKismetSystemLibrary::BoxTraceMulti(GetWorld(), LinetraceStart, LineTraceEnd, {10,10,10}, { 0,0,0 }, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::None, Hits, true);
+	for (auto Hit : Hits)
+	{
+		AWeaponBase* Weapon = Cast<AWeaponBase>(Hit.GetActor());
+		if (Weapon)
+		{
+			AddWeaponToInventory(Weapon);
+			UE_LOG(LogTemp, Error, TEXT("Hit some weapon %s"),*(Weapon->WeaponName.ToString()));
+		}
+		UE_LOG(LogTemp, Error, TEXT("Hit some shit"));//, *(Hit.GetActor()->GetName()));
+	}
+}
+
+void AFPS_Charachter::AddWeaponToInventory(AWeaponBase* Weapon)
+{
+	if (!Weapon)
+		return;
+	for (auto InInventoryWeapon : Inventory)
+	{
+		if (Weapon->WeaponName == InInventoryWeapon->WeaponName)	
+			return;
+	}
+	
+	Weapon->SetOwningPawn(this);
+	Inventory.AddUnique(Weapon);
+	UE_LOG(LogTemp, Warning, TEXT("%d num weapons"), Inventory.Num());
+}
+
 
 
 
@@ -479,6 +522,7 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("Follow", IE_Pressed, this, &AFPS_Charachter::OrderFollow);
 	PlayerInputComponent->BindAction("CallAssistance", IE_Pressed, this, &AFPS_Charachter::OrderCallAssistance);
 	PlayerInputComponent->BindAction("Dismiss", IE_Pressed, this, &AFPS_Charachter::OrderDismiss);
+	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AFPS_Charachter::OnPressedActionButton);
 
 	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);

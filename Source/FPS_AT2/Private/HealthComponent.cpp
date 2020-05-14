@@ -14,7 +14,7 @@ UHealthComponent::UHealthComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
-	SetIsReplicated(true);
+	//SetIsReplicated(true);
 }
 
 
@@ -53,8 +53,8 @@ void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const 
 }
 
 
-void UHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UHealthComponent, CurrentHealth);
-}
+//void UHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+//{
+//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//	DOREPLIFETIME(UHealthComponent, CurrentHealth);
+//}

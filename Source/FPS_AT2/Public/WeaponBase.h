@@ -39,11 +39,15 @@ protected:
 
 	virtual void Tick (float DeltaSeconds) override;
 
+	virtual void PostInitializeComponents() override;
+
 public:	
 	UFUNCTION(BlueprintCallable, Category = "Properties")
 		void OnFire();
 	UFUNCTION(BlueprintCallable, Category = "Properties")
 		void WeaponFire();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Properties)
+		FName WeaponName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 		FVector GunOffset;
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
@@ -94,11 +98,15 @@ public:
 	void Reload();
 	void ReloadWeapon();
 	void OnLeaveInventory();
-
+	void SetCurrentAmmo(int32 CurrentAmmo, int32 CurrentAmmoInMagazine);
+	int32 GetCurrentAmmo() { return CurrentAmmo; };
+	int32 GetCurrentAmmoInMagazine() { return CurrentAmmoInMagazine; };
 	//Which to fire from, FP, or 3P
 	bool IsFirstPerson = true;
 
 	void DroppedOnWorld();
+
+	void DropOnWorld();
 
 	protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
@@ -137,6 +145,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
 	float WeaponDamage;
 
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	bool IsExplosive = false;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Transient)

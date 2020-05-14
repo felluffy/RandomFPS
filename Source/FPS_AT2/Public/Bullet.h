@@ -47,11 +47,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	class UParticleSystemComponent* TrailParticleComp = nullptr;
 	UPROPERTY(EditDefaultsOnly, Category = Components)
-	TArray<UDecalComponent*> BulletImpactHoles;
+	TArray<UMaterialInstance*> BulletImpactHoles;
 public:
 	class AFPS_Charachter* Instigator;
 
-protected:
-	bool bIsExplosive = false;
+
+public:
 	float fDamage = 30.0f;
+	bool bIsExplosive = false;
 };

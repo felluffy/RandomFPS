@@ -33,7 +33,7 @@ public:
 	float GetHealth() const { return CurrentHealth; }
 	float GetPercentageHealth() const { return CurrentHealth / MaxHealth; }
 
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 

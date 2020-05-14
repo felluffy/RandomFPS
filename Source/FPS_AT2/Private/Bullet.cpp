@@ -82,7 +82,7 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 	}
 	//DrawDebugSphere(GetWorld(), Hit.Location, 50, 6, FColor::White, false, 5.0f, 0, 5.0);
 	PlayParticle();
-
+	ApplyDecal();
 	Destroy();
 }
 
@@ -94,5 +94,9 @@ void ABullet::PlayParticle()
 
 void ABullet::ApplyDecal()
 {
-	uint8 Index = FMath::RandRange(0, BulletImpactHoles.Num());
+	if (BulletImpactHoles.Num() > 0)
+	{
+		uint8 Index = FMath::RandRange(0, BulletImpactHoles.Num());
+		UGameplayStatics::SpawnDecalAtLocation(GetWorld(), BulletImpactHoles[Index], { 10,10, 10 }, GetActorLocation()); //GetActorLocation()->Rotation());
+	}
 }
