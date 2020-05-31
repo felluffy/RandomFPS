@@ -73,16 +73,16 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 // 		if(bIsExplosive)
 // 			UGameplayStatics::ApplyRadialDamageWithFalloff(GetWorld(), fDamage, 0, 
 		if(fDamage > 0)
-			UGameplayStatics::ApplyPointDamage(OtherActor, fDamage, GetActorLocation(), HitInfo, NULL, this, UDamageType::StaticClass());		
+			UGameplayStatics::ApplyPointDamage(OtherActor, fDamage, GetActorLocation(), HitInfo, this->GetInstigator()->GetController(), this, UDamageType::StaticClass());		
 		
-		
+		UE_LOG(LogTemp, Warning, TEXT("%s hit %s actor"), *OtherActor->GetName(), *HitComp->GetName());
 		//@TODO Add decal on impact
 		//UGameplayStatics::SpawnDecalAtLocation(GetWorld(), )
 		
 	}
 	//DrawDebugSphere(GetWorld(), Hit.Location, 50, 6, FColor::White, false, 5.0f, 0, 5.0);
 	PlayParticle();
-	ApplyDecal();
+	ApplyDecal();	
 	Destroy();
 }
 

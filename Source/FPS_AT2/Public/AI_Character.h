@@ -29,4 +29,6 @@ public:
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = DamageSense)
 	bool IsDamagedWithinSeconds;
+
+	
 };

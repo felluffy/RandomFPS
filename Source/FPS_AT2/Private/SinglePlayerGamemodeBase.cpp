@@ -46,9 +46,9 @@ ASinglePlayerGamemodeBase::ASinglePlayerGamemodeBase()
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Blueprints/FPS_CharachterBP"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
-	static ConstructorHelpers::FClassFinder<APawn> BotPawnOb(TEXT("/Game/Blueprints/AI/AI_Bot"));
-	BotPawnClass = BotPawnOb.Class;
-
+	/*static ConstructorHelpers::FClassFinder<APawn> BotPawnOb(TEXT("/Game/Blueprints/AI/AI_Bot"));
+	BotPawnClass = BotPawnOb.Class;*/
+		
 	// use our custom HUD class
 	HUDClass = AFPS_AT2HUD::StaticClass();
 	PlayerControllerClass = AFPS_AT2PlayerController::StaticClass();
@@ -65,12 +65,12 @@ void ASinglePlayerGamemodeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UWorld* World = GetWorld();
-	FTransform SpawnLocation = FTransform({}, { 0, 0, 50 }, { 0, 0, 0 }, FVector::OneVector);
-	FActorSpawnParameters SpawnParams;
-	Spawned_Character = World->SpawnActor<AFPS_Charachter>(AFPS_Charachter::StaticClass(), { 0,0,50 }, { 0,0,0 });
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *Spawned_Character->GetName());
+	//UWorld* World = GetWorld();
+	//FTransform SpawnLocation = FTransform({}, { 0, 0, 50 }, { 0, 0, 0 }, FVector::OneVector);
+	//FActorSpawnParameters SpawnParams;
+	//Spawned_Character = World->SpawnActor<AFPS_Charachter>(AFPS_Charachter::StaticClass(), { 0,0,50 }, { 0,0,0 });
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *Spawned_Character->GetName());
 	CreateBotControllers();
-	FTimerHandle Timer;
+	//FTimerHandle Timer;
 	//GetWorldTimerManager().SetTimer(Timer, this, &ASinglePlayerGamemodeBase::DestroyActorFunction, 10);
 }

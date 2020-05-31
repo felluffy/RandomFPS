@@ -38,20 +38,36 @@ void UHealthComponent::BeginPlay()
 
 void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
 {
-	if (Damage <= 0.0f)
+	if (Damage <= 0.0f || !InstigatedBy)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to cause damage"));
 		return;
 	}
-	AFPS_Charachter* Damaged = Cast<AFPS_Charachter>(DamagedActor), *Instigator = Cast<AFPS_Charachter>(InstigatedBy->GetPawn());
-	//if (Damaged && Instigator && Damaged->TeamNumber == Instigator->TeamNumber)
-	//	Damage *= .1;
+	/*AFPS_Charachter* Damaged = Cast<AFPS_Charachter>(DamagedActor);
+	AFPS_Charachter* Instigator = Cast<AFPS_Charachter>(InstigatedBy->GetPawn());
+	if (Damaged && Instigator && Damaged->TeamNumber == Instigator->TeamNumber)
+		Damage *= .1;*/
+
+	if (IsFriendly(DamagedActor, Cast<AActor>(InstigatedBy->GetCharacter())))
+	{
+		Damage *= .3;
+	}
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
 	UE_LOG(LogTemp, Log, TEXT("Health at %f"), CurrentHealth);
 
 	OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
 
 }
-
+bool UHealthComponent::IsFriendly(AActor* ActorA, AActor* ActorB)
+{
+	if (!ActorA || !ActorB)
+	{		
+		return true;
+	}
+	UHealthComponent* HealthCompActorA = Cast<UHealthComponent>(ActorA->GetComponentByClass(UHealthComponent::StaticClass()));
+	UHealthComponent* HealthCompActorB = Cast<UHealthComponent>(ActorB->GetComponentByClass(UHealthComponent::StaticClass()));
+	return HealthCompActorA->TeamNumber == HealthCompActorB->TeamNumber;
+}
 
 //void UHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 //{

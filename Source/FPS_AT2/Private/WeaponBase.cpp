@@ -47,7 +47,7 @@ AWeaponBase::AWeaponBase()
 	//SetReplicates(true);
 	TP_Gun->SetupAttachment(FP_Gun);
 	TP_Gun->SetHiddenInGame(true);
-	UE_LOG(LogTemp, Error, TEXT("Weapon cons called %s - %d - %d"), *GetName(), CurrentAmmo, CurrentAmmoInMagazine);
+	//UE_LOG(LogTemp, Error, TEXT("Weapon cons called %s - %d - %d"), *GetName(), CurrentAmmo, CurrentAmmoInMagazine);
 
 	//Networking here
 }
@@ -64,6 +64,7 @@ void AWeaponBase::SetOwningPawn(AFPS_Charachter* NewOwner)
 {
 	if (Owner != NewOwner)
 	{
+		UE_LOG(LogTemp, Error, TEXT("%s -"), *NewOwner->GetName());
 		bAllowedToFire = true;
 		SetInstigator(NewOwner);
 		Owner = NewOwner;
@@ -142,10 +143,11 @@ void AWeaponBase::OnFire()
 	if(bAllowedToFire && Owner)
 	if (ProjectileClass != NULL)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
+		//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 		UWorld* const World = GetWorld();
 		if (World != NULL)
 		{
+			bRecoil = false;
 			if (CurrentAmmoInMagazine) // can fire
 			{
 				//UE_LOG(LogTemp, Warning, TEXT("FIRING"));
@@ -159,12 +161,13 @@ void AWeaponBase::OnFire()
 				
 				FVector SpreadAdjustment = (FVector(FMath::RandRange(-Spread, Spread) * VectorSize, FMath::RandRange(-Spread, Spread) * VectorSize, 0.0));
 		
-				SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation() + SpreadAdjustment.ToOrientationRotator();;
+				//SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation() + SpreadAdjustment.ToOrientationRotator();;
+				SpawnRotation = Owner->GetControlRotation() + SpreadAdjustment.ToOrientationRotator();;
 				//auto c = 
 				auto Rot = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
 				auto Rot2 = SpreadAdjustment.ToOrientationRotator();
-				UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_SPAWNRO %f %f %f"), Rot2.Yaw, Rot2.Pitch, Rot2.Roll);
-				UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_CAMERA %f %f %f"), Rot.Yaw, Rot.Pitch, Rot.Roll);
+				//UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_SPAWNRO %f %f %f"), Rot2.Yaw, Rot2.Pitch, Rot2.Roll);
+				//UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_CAMERA %f %f %f"), Rot.Yaw, Rot.Pitch, Rot.Roll);
 				FVector SpawnLocation;
 				if(IsFirstPerson)
 				{
@@ -178,34 +181,37 @@ void AWeaponBase::OnFire()
 				//Set Spawn Collision Handling Override
 				FActorSpawnParameters ActorSpawnParams;
 				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
+				ActorSpawnParams.Instigator = Owner;
+				ActorSpawnParams.Owner = Owner;
 				// spawn the projectile at the muzzle
 				auto bbb = World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 				bbb->fDamage = this->WeaponDamage;
 				bbb->bIsExplosive = this->IsExplosive;
+				bbb->SetInstigator(Owner);
 				CurrentAmmoInMagazine--;
-				if (CurrentAmmoInMagazine == 0)
+				if (CurrentAmmoInMagazine <= 0)
 					bAllowedToFire = false;
 
 				//Add Recoil
 
 				OnRecoil();
 
-				if (ensure(FireSound))
-				{
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
-				}
+				//if (ensure(FireSound))
+				//{
+				//	UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
+				//}
 
-				if (ensure(MuzzleEffect))
-				{
-					UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
-				}
+				//if (ensure(MuzzleEffect))
+				//{
+				//	UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
+				//}
 			}
-			else
-			{
-				Reload();
-			}
+			
 		}
+	}
+	else
+	{
+		Reload();
 	}
 }
 
@@ -289,6 +295,7 @@ void AWeaponBase::Reload()
 	StopFire();
 	
 	//reload conditions
+	//UE_LOG(LogTemp, Warning, TEXT("RELOADING"));
 	if (CurrentAmmoInMagazine == MagazineAmmoCapacity || CurrentAmmo <= 0)
 		return;
 	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);

@@ -51,7 +51,6 @@ protected:
 public:
 	class AFPS_Charachter* Instigator;
 
-
 public:
 	float fDamage = 30.0f;
 	bool bIsExplosive = false;

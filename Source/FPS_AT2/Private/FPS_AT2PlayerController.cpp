@@ -7,12 +7,16 @@
 void AFPS_AT2PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("idiot"));
+	//RegisterredControllers = new TArray<ANPC_AI_Controller>();
+	//UE_LOG(LogTemp, Warning, TEXT("idiot"));
 }
 
 
 bool AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
 {
+	if (NPCs.Num() < 1)
+		return false;
+
 	uint8 Index = rand() % NPCs.Num();
 	ANPC_AI_Controller* RandomAI = NPCs[Index];
 	if (RandomAI)
@@ -26,6 +30,8 @@ bool AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
 
 void AFPS_AT2PlayerController::RegisterBot(int index)
 {
+	if (NPCs.Num() < 1)
+		return;
 	if (RegisterredControllers.IsValidIndex(index))
 		RegisterredControllers.Remove(NPCs[index]);
 	else
@@ -63,3 +69,14 @@ void AFPS_AT2PlayerController::AttackTargettedEnenmy(AFPS_Charachter* EnemyChar)
 
 }
 
+
+void AFPS_AT2PlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+	InputComponent->BindAction("InGameMenu", IE_Pressed, this, &AFPS_AT2PlayerController::OnToggleInGameMenu);
+}
+
+void AFPS_AT2PlayerController::OnToggleInGameMenu()
+{
+
+}

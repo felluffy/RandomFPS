@@ -68,6 +68,7 @@ void AFPS_Charachter::BeginPlay()
 {
 	Super::BeginPlay();
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
+	HealthComp->SetTeam(TeamNumber);
 	if(DefaultWeaponClasses.Num() > 0)
 	{
 		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
@@ -82,7 +83,7 @@ void AFPS_Charachter::BeginPlay()
 			Inventory[1]->SetOwningPawn(this);
 		}
 			//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
-		UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon"), *CurrentWeapon->WeaponName.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon"), *CurrentWeapon->WeaponName.ToString());
 		
 	}
 
@@ -95,6 +96,10 @@ void AFPS_Charachter::BeginPlay()
 	}
 
 	PlayerController_AFPS2 = Cast<AFPS_AT2PlayerController>(GetController());
+	if (PlayerController_AFPS2)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s - is the current controller"), *PlayerController_AFPS2->GetName());
+	}
 }
 
 
@@ -176,8 +181,8 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		FHitResult Hit;
 		FCollisionQueryParams CollisionParams;
 		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LinetraceEnd, ECC_WorldDynamic, CollisionParams);
-		if(Hit.bBlockingHit)
-			SpawnLocation = Hit.ImpactPoint + (Hit.ImpactNormal * 20);
+		if (Hit.bBlockingHit)
+			SpawnLocation = Hit.ImpactPoint + (Hit.ImpactNormal * 200);
 		else 
 			SpawnLocation = LinetraceEnd;
 		FActorSpawnParameters SpawnParams;
@@ -228,7 +233,7 @@ void AFPS_Charachter::StartFire()
 	if (bAllowedToFire && CurrentWeapon)
 	{
 		CurrentWeapon->StartFire();
-		UE_LOG(LogTemp, Error, TEXT("%s"), *CurrentWeapon->WeaponName.ToString());
+		//UE_LOG(LogTemp, Error, TEXT("%s"), *CurrentWeapon->WeaponName.ToString());
 	}
 }
 
@@ -337,8 +342,9 @@ void AFPS_Charachter::Suicide()
 void AFPS_Charachter::StartSprinting()
 {
 	if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .1f)
-		MovementComponent->MaxWalkSpeed = 200;
-	MovementComponent->MaxWalkSpeed = 800;
+		MovementComponent->MaxWalkSpeed = 450;
+	else 
+		MovementComponent->MaxWalkSpeed = 700;
 	IsSprinting = true;
 	bShouldSprint = true;
 	StopFire();
@@ -348,6 +354,7 @@ void AFPS_Charachter::StartSprinting()
 
 void AFPS_Charachter::StopSprinting()
 {
+	MovementComponent->MaxWalkSpeed = 300;
 	bShouldSprint = false;
 	bAllowedToFire = true;
 	IsSprinting = false;
@@ -363,9 +370,10 @@ void AFPS_Charachter::CommandBot()
 	{
 		//line trace
 		FHitResult Hit;
-		auto LineTraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
-		auto EndLocation = LineTraceStart + (500 * LineTraceStart);	//lline trace range is 500
-		GetWorld()->LineTraceSingleByChannel(Hit, LineTraceStart, EndLocation, ECC_Visibility);
+		FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
+		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+		FVector LineTraceEnd = LinetraceStart + (NormalRotation * 5000);	//lline trace range is 500
+		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LineTraceEnd, ECC_Visibility);
 		FVector fv(0, 0, 0);
 		if (Hit.bBlockingHit)
 		{
@@ -384,6 +392,24 @@ void AFPS_Charachter::CommandBot_1()
 	if (PlayerController_AFPS2)
 	{
 		PlayerController_AFPS2->RegisterBot(0);
+	}
+	if (PlayerController_AFPS2)
+	{
+		//line trace
+		FHitResult Hit;
+		FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
+		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+		FVector LineTraceEnd = LinetraceStart + (NormalRotation * 5000);	//lline trace range is 500
+		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LineTraceEnd, ECC_Visibility);
+		FVector fv(0, 0, 0);
+		if (Hit.bBlockingHit)
+		{
+			fv = Hit.Location;
+			UE_LOG(LogTemp, Warning, TEXT("ETDTSKKM %f - %f - %f"), fv.X, fv.Y, fv.Z);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
+
+		PlayerController_AFPS2->CommandMove(fv);
 	}
 }
 void AFPS_Charachter::CommandBot_2()
@@ -458,7 +484,7 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 		bInactive = true;
 		GetMovementComponent()->StopMovementImmediately();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		AController* CurrentController = GetController();
+		AController* CurrentController = Cast<AController>(GetController());
 		if (CurrentController)
 		{
 			CurrentController->UnPossess();

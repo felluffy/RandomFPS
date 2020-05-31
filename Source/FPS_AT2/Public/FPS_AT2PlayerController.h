@@ -22,6 +22,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 public:
+	virtual void SetupInputComponent() override;
+
 	//UPROPERTY(BlueprintAssignable, Category = "Events")
 	//	FOnCallAssistance CallAssistance_NPCs;
 	bool CommandMove(FVector &WorldPosition);
@@ -40,5 +42,6 @@ public:
 	void OnHideScoreBoard();
 	void Test();
 
-
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Game Settings")
+		bool bIsInGame;
 };

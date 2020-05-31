@@ -33,9 +33,12 @@ public:
 	float GetHealth() const { return CurrentHealth; }
 	float GetPercentageHealth() const { return CurrentHealth / MaxHealth; }
 
+	static bool IsFriendly(AActor* ActorA, AActor* ActorB);
+	void SetTeam(uint8 TeamNum) { TeamNumber = TeamNum; }
 	//void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
+	uint8 TeamNumber;
 
 
 protected:
