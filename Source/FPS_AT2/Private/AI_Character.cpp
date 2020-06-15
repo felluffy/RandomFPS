@@ -74,3 +74,19 @@ void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Hea
 
 	}
 }
+
+void AAI_Character::GetActorEyesViewPoint(FVector& Location, FRotator& Rotation) const
+{
+	GetPerceptionLocationAndRotation(Location, Rotation);
+}
+
+void AAI_Character::GetPerceptionLocationAndRotation(FVector& Location, FRotator& Rotation) const
+{
+	Mesh3P->GetSocketWorldLocationAndRotation(EyeSocketName, Location, Rotation);
+}
+
+void AAI_Character::RotateHeadOnGuard()
+{
+	//HeadRotation = Mesh3P->GetBoneTransform()
+	//FMath::RInterpTo(1)
+}

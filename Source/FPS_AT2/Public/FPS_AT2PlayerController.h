@@ -44,4 +44,10 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Game Settings")
 		bool bIsInGame;
+
+	void OrderAttack();
+	void OrderFollow();
+	void OrderGuard();
+	void OrderDismiss();
+	void OrderCallAssistance();
 };

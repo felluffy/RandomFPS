@@ -48,7 +48,7 @@ AWeaponBase::AWeaponBase()
 	TP_Gun->SetupAttachment(FP_Gun);
 	TP_Gun->SetHiddenInGame(true);
 	//UE_LOG(LogTemp, Error, TEXT("Weapon cons called %s - %d - %d"), *GetName(), CurrentAmmo, CurrentAmmoInMagazine);
-
+	bAddedOffset = false;
 	//Networking here
 }
 
@@ -184,10 +184,12 @@ void AWeaponBase::OnFire()
 				ActorSpawnParams.Instigator = Owner;
 				ActorSpawnParams.Owner = Owner;
 				// spawn the projectile at the muzzle
+				//FTransform Transform = {()}
 				auto bbb = World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 				bbb->fDamage = this->WeaponDamage;
 				bbb->bIsExplosive = this->IsExplosive;
 				bbb->SetInstigator(Owner);
+				//UGameplayStatics::FinishSpawningActor(bbb);
 				CurrentAmmoInMagazine--;
 				if (CurrentAmmoInMagazine <= 0)
 					bAllowedToFire = false;
@@ -269,6 +271,22 @@ void AWeaponBase::AttachMeshToPawn()
 		
 		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 		TP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
+		//FP_Gun->SetWorldLocation({ Owner->GetActorForwardVector() * 30 });
+		auto RootBoneLocation_FP = FP_Gun->GetBoneLocation(RootBoneName);
+		auto HandleLocation_FP = FP_Gun->GetSocketLocation(GripHandle);
+		
+		auto RootBoneLocation_TP = TP_Gun->GetBoneLocation(RootBoneName);
+		auto HandleLocation_TP = TP_Gun->GetSocketLocation(GripHandle);
+		
+		auto Difference_FP = RootBoneLocation_FP - HandleLocation_FP;//FVector::Distance(RootBoneLocation, HandleLocation);
+		auto Difference_TP = RootBoneLocation_TP - HandleLocation_TP;
+		if (!bAddedOffset)
+		{
+			FP_Gun->AddWorldOffset(Difference_FP);
+			TP_Gun->AddWorldOffset(Difference_TP);
+			
+			bAddedOffset = true;
+		}
 	}
 }
 

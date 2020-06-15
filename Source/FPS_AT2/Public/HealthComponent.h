@@ -27,11 +27,15 @@ public:
 	UFUNCTION()
 	void TakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
+	UFUNCTION()
+	void TakePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser );
+
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealhChangedSignature OnHealthChanged;
 
 	float GetHealth() const { return CurrentHealth; }
 	float GetPercentageHealth() const { return CurrentHealth / MaxHealth; }
+	float GetMaxHealth() const { return MaxHealth; }
 
 	static bool IsFriendly(AActor* ActorA, AActor* ActorB);
 	void SetTeam(uint8 TeamNum) { TeamNumber = TeamNum; }
@@ -39,7 +43,7 @@ public:
 
 private:
 	uint8 TeamNumber;
-
+	bool SpecialDamageType = false;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Health Attributes")
@@ -47,3 +51,5 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Health Attributes")
 	float CurrentHealth;
 };
+
+

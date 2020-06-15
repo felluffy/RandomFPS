@@ -15,11 +15,14 @@
 #include "WeaponBase.h" 	
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SynthComponent.h"
 #include "FPS_AT2PlayerController.h"
+#include "VoiceHttpSTTComponent.h"
 #include "GameFramework/DamageType.h"
 #include "WeaponBase.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/InputSettings.h"
+
 // Sets default values
 AFPS_Charachter::AFPS_Charachter()
 {
@@ -47,21 +50,21 @@ AFPS_Charachter::AFPS_Charachter()
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
-
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
 	HealthComp->SetAutoActivate(true);
-
+	VoiceComponent = CreateDefaultSubobject<UVoiceHttpSTTComponent>(TEXT("VoiceComp"));
+	//SynthComponent = CreateDefaultSubobject <USynthComponent>(TEXT("SynthComponent"));
+	//AudioCaptureComponent = CreateDefaultSubobject<UAudioCaptureComponent>(TEXT("AudioCaptureComponent"));
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject< UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComponent"));
 	PerceptionStimuliSourceComponent->SetAutoActivate(true);
+
+
 
 	MovementComponent = FindComponentByClass<UCharacterMovementComponent>();
 	MovementComponent->MaxWalkSpeedCrouched = 200;
 	DropWeaponMaxDistance = 200.0f;
-
 	SprintingSpeedModifier = 3.0f;
-
-
-}
+}	
 
 // Called when the game starts or when spawned
 void AFPS_Charachter::BeginPlay()
@@ -69,6 +72,7 @@ void AFPS_Charachter::BeginPlay()
 	Super::BeginPlay();
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
 	HealthComp->SetTeam(TeamNumber);
+	
 	if(DefaultWeaponClasses.Num() > 0)
 	{
 		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
@@ -91,6 +95,7 @@ void AFPS_Charachter::BeginPlay()
 	if (it)
 	{	
 		USkeletalMeshComponent* PawnMesh1p = it->GetMeshComp(false);
+		
 		//CurrentWeapon->attacht
 		//Mesh1P->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, it->WeaponAttachPoint);
 	}
@@ -98,7 +103,9 @@ void AFPS_Charachter::BeginPlay()
 	PlayerController_AFPS2 = Cast<AFPS_AT2PlayerController>(GetController());
 	if (PlayerController_AFPS2)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s - is the current controller"), *PlayerController_AFPS2->GetName());
+		VoiceComponent->OnRecognizedSpeech.AddDynamic(this, &AFPS_Charachter::OnVoiceRecognized);
+		VoiceComponent->Activate();
+		//UE_LOG(LogTemp, Warning, TEXT("%s - is the current controller"), *PlayerController_AFPS2->GetName());
 	}
 }
 
@@ -174,9 +181,13 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		FVector SpawnLocation;
 		FRotator SpawnRotation = CameraRotation;
 		//line trace on where to drop
-		const FVector LinetraceStart = GetActorLocation();
-		const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
-		DrawDebugSphere(GetWorld(), LinetraceEnd, 10, 4, FColor::Red, true, 5);
+		//const FVector LinetraceStart = GetActorLocation();
+		//const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
+		FVector LinetraceStart = Mesh1P->GetBoneLocation("hand_r");//GetFirstPersonCameraComponent()->GetComponentLocation();
+		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+		FVector LinetraceEnd = LinetraceStart + (NormalRotation * DefaultTraceDistance);
+
+		DrawDebugSphere(GetWorld(), LinetraceEnd, 30, 2, FColor::Red, true, 5);
 		
 		FHitResult Hit;
 		FCollisionQueryParams CollisionParams;
@@ -281,33 +292,50 @@ bool AFPS_Charachter::CanFire()
 void AFPS_Charachter::OrderAIAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderAIAttack()"));
-	PlayerController_AFPS2->Test();
+	if(PlayerController_AFPS2)
+		PlayerController_AFPS2->OrderAttack();
 }
 
 void AFPS_Charachter::OrderFollow()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderFollow()"));
-	PlayerController_AFPS2->Test();
+	if(PlayerController_AFPS2)
+	PlayerController_AFPS2->OrderFollow();
 }
 
 void AFPS_Charachter::OrderGuard()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderGuard()"));
-	PlayerController_AFPS2->Test();
+	if(PlayerController_AFPS2)
+	PlayerController_AFPS2->OrderGuard();
 
 }
 
 void AFPS_Charachter::OrderDismiss()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderDismiss()"));
-	PlayerController_AFPS2->Test();
+	if(PlayerController_AFPS2)
+	PlayerController_AFPS2->OrderDismiss();
 }
 
 
 void AFPS_Charachter::OrderCallAssistance()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderCallAssistance()"));
-	PlayerController_AFPS2->Test();
+	if(PlayerController_AFPS2)
+	PlayerController_AFPS2->CallAssistance();
+}
+
+void AFPS_Charachter::StartRecordingAudio_Implementation()
+{
+	//AudioCaptureComponent->Activate();
+	//SynthComponent->start
+	//AudioCaptureComponent->startr
+}
+
+void AFPS_Charachter::StopRecordingAudio_Implementation()
+{
+
 }
 
 void AFPS_Charachter::BeginCrouch()
@@ -492,12 +520,33 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 			CurrentController->Destroy();
 		}
 
+		Mesh3P->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Mesh3P->SetAllBodiesSimulatePhysics(true);
+		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Mesh3P->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_MAX);
+
 		DetachFromControllerPendingDestroy();
 		UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
 		
 	}
+	else if(OnDamagedShake != NULL)
+	{
+		HealthDelta /= HealthComponent->GetMaxHealth();
+		PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnDamagedShake, HealthDelta, ECameraAnimPlaySpace::CameraLocal);
+	}
 }
 
+
+void AFPS_Charachter::OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, float AccuracyScore, FString SentenceRetreived)
+{
+	RecognizedWord = SentenceRetreived.ToLower();
+	if (RecognizedWord.Contains("follow"))
+		this->OrderFollow();
+	else if (RecognizedWord.Contains("defend"))
+		this->OrderGuard();
+
+
+}
 
 //void AFPS_Charachter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 //{
@@ -514,6 +563,27 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 	{
 		UnCrouch();
 	}
+	if (IsSprinting)
+	{
+		if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .1f)
+			MovementComponent->MaxWalkSpeed = 450;
+		else
+			MovementComponent->MaxWalkSpeed = 700;
+	}
+	if (OnMovmentShake)
+	{
+		auto CameraShakeScale = (this->GetVelocity().Size()) / 1000;
+		//PlayerController_AFPS2->Getcamera
+		PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnMovmentShake, CameraShakeScale, ECameraAnimPlaySpace::CameraLocal);
+	}
+
+	//LINE TRACE AND STORE Value
+	FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
+	FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+	FVector LineTraceEnd = LinetraceStart + (NormalRotation * DefaultTraceDistance);
+	UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, LineTraceEnd, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::None, CurrentObjectHit, true);
+
+	
 
 	//@TODO: pick up based on what's seen throiugh linetrace from eye to dropped equipment
 
@@ -549,6 +619,8 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("CallAssistance", IE_Pressed, this, &AFPS_Charachter::OrderCallAssistance);
 	PlayerInputComponent->BindAction("Dismiss", IE_Pressed, this, &AFPS_Charachter::OrderDismiss);
 	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AFPS_Charachter::OnPressedActionButton);
+	PlayerInputComponent->BindAction("AudioCapture", IE_Pressed, this, &AFPS_Charachter::StartRecordingAudio_Implementation);
+	PlayerInputComponent->BindAction("AudioCapture", IE_Released, this, &AFPS_Charachter::StopRecordingAudio_Implementation);
 
 	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);

@@ -19,6 +19,12 @@ public:
 		class UCameraComponent* FirstPersonCameraComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 		class UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		class UVoiceHttpSTTComponent* VoiceComponent;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "STT")
+	//class UAudioCaptureComponent* AudioCaptureComponent;
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "STT")
+	class USynthComponent* SynthComponent;*/
 
 public:
 	// Sets default values for this character's properties
@@ -98,6 +104,9 @@ public:
 		bool bInactive = false;
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)
 		FName WeaponAttachPoint = TEXT("GripPoint");
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh")
+	FRotator HeadRotation;
+
 
 	UPROPERTY(BlueprintReadOnly, Category = "Locomotion")
 		bool IsSprinting = false;
@@ -107,7 +116,12 @@ public:
 		bool IsProning = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Locomotion")
 		bool IsCrouching = false;
-
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Player Settings")
+		float DefaultTraceDistance = 1000;
+private:
+	FVector CurrentLocationEyeDistanceEnd;
+	FHitResult CurrentObjectHit;
 
 
 
@@ -161,7 +175,7 @@ protected:
 	TSubclassOf<class AAI_Character> TeamClasses;
 
 public:
-	UPROPERTY(EditAnywhere, Category = "Multiplayer")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Multiplayer")
 		uint8 TeamNumber = 0;
 	void OrderAIAttack();
 	void OrderFollow();
@@ -169,4 +183,22 @@ public:
 	void OrderDismiss();
 	void OrderCallAssistance();
 	class AFPS_AT2PlayerController* PlayerController_AFPS2;
+
+
+public:
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
+	void StartRecordingAudio();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
+	void StopRecordingAudio();
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Shakes")
+		TSubclassOf<class UCameraShake> OnDamagedShake;
+	UPROPERTY(EditDefaultsOnly, Category = "Shakes")
+		TSubclassOf<class UCameraShake> OnMovmentShake;
+
+public:
+	UFUNCTION(BlueprintCallable)
+		virtual void OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, float AccuracyScore, FString SentenceRetreived);
+	FString RecognizedWord;
 };

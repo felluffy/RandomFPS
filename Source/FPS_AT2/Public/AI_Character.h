@@ -26,9 +26,13 @@ public:
 		class UBehaviorTree* BotBehavior;
 
 	virtual void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser) override;
+	virtual void GetActorEyesViewPoint(FVector& Location, FRotator& Rotation) const override;
+	void GetPerceptionLocationAndRotation(FVector& Location, FRotator& Rotation) const;
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = DamageSense)
 	bool IsDamagedWithinSeconds;
+	UPROPERTY(BlueprintReadWrite, Category = "Sockets")
+	FName EyeSocketName = "headSocket";
 
-	
+	void RotateHeadOnGuard();
 };

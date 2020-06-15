@@ -49,6 +49,31 @@ void AFPS_AT2PlayerController::Test()
 
 }
 
+void AFPS_AT2PlayerController::OrderAttack()
+{
+
+}
+
+void AFPS_AT2PlayerController::OrderFollow()
+{
+
+}
+
+void AFPS_AT2PlayerController::OrderGuard()
+{
+
+}
+
+void AFPS_AT2PlayerController::OrderDismiss()
+{
+
+}
+
+void AFPS_AT2PlayerController::OrderCallAssistance()
+{
+
+}
+
 //void AFPS_AT2PlayerController::CommandMove(FVector &WorldPosition)
 	//{
 	//
@@ -77,6 +102,16 @@ void AFPS_AT2PlayerController::SetupInputComponent()
 }
 
 void AFPS_AT2PlayerController::OnToggleInGameMenu()
+{
+
+}
+
+void AFPS_AT2PlayerController::OnToggleScoreBoard()
+{
+
+}
+
+void AFPS_AT2PlayerController::OnHideScoreBoard()
 {
 
 }

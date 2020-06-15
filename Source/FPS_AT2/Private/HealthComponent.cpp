@@ -28,6 +28,7 @@ void UHealthComponent::BeginPlay()
 	if (Owner)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Health at %s"), *Owner->GetName());
+		//Owner->OnTakePointDamage.AddDynamic(this, &UHealthComponent::TakePointDamage);
 		Owner->OnTakeAnyDamage.AddDynamic(this, &UHealthComponent::TakeAnyDamage);
 	}
 	//}
@@ -38,26 +39,51 @@ void UHealthComponent::BeginPlay()
 
 void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
 {
+	if (!SpecialDamageType)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Any DAMAGE"));
+		if (Damage <= 0.0f || !InstigatedBy)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to cause damage"));
+			return;
+		}
+		/*AFPS_Charachter* Damaged = Cast<AFPS_Charachter>(DamagedActor);
+		AFPS_Charachter* Instigator = Cast<AFPS_Charachter>(InstigatedBy->GetPawn());
+		if (Damaged && Instigator && Damaged->TeamNumber == Instigator->TeamNumber)
+			Damage *= .1;*/
+
+		if (IsFriendly(DamagedActor, Cast<AActor>(InstigatedBy->GetCharacter())))
+		{
+			Damage *= .3;
+		}
+		CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
+		UE_LOG(LogTemp, Log, TEXT("Health at %f"), CurrentHealth);
+
+		OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
+	}
+	else
+		SpecialDamageType = false;
+}
+
+void UHealthComponent::TakePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser)
+{
+	SpecialDamageType = true;
+	UE_LOG(LogTemp, Warning, TEXT("POINT DAMAGE"));
 	if (Damage <= 0.0f || !InstigatedBy)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to cause damage"));
 		return;
 	}
-	/*AFPS_Charachter* Damaged = Cast<AFPS_Charachter>(DamagedActor);
-	AFPS_Charachter* Instigator = Cast<AFPS_Charachter>(InstigatedBy->GetPawn());
-	if (Damaged && Instigator && Damaged->TeamNumber == Instigator->TeamNumber)
-		Damage *= .1;*/
+	//UE_LOG(LogTemp, Warning, TEXT("BONE: %s"), *BoneName->ToString());
+	UE_LOG(LogTemp, Warning, TEXT("BONE: %s"), *(BoneName.ToString()));
 
 	if (IsFriendly(DamagedActor, Cast<AActor>(InstigatedBy->GetCharacter())))
 	{
 		Damage *= .3;
 	}
-	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Log, TEXT("Health at %f"), CurrentHealth);
-
 	OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
-
 }
+
 bool UHealthComponent::IsFriendly(AActor* ActorA, AActor* ActorB)
 {
 	if (!ActorA || !ActorB)

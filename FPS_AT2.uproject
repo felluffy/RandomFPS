@@ -10,7 +10,8 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"AIModule"
+				"AIModule",
+				"CoreUObject"
 			]
 		}
 	],
@@ -26,6 +27,22 @@
 		},
 		{
 			"Name": "Synthesis",
+			"Enabled": true
+		},
+		{
+			"Name": "PythonScriptPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "ChaosEditor",
+			"Enabled": true
+		},
+		{
+			"Name": "ChaosNiagara",
+			"Enabled": true
+		},
+		{
+			"Name": "FieldSystemPlugin",
 			"Enabled": true
 		}
 	]

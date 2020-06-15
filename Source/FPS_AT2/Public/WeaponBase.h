@@ -27,11 +27,16 @@ class FPS_AT2_API AWeaponBase : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AWeaponBase();
+	class USkeletalMeshComponent* GetFP_Gun() { return FP_Gun; }
+	class USkeletalMeshComponent* GetTP_Gun() { return TP_Gun; }
 
+protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Mesh)
 		class USkeletalMeshComponent* FP_Gun;
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Mesh)
 		class USkeletalMeshComponent* TP_Gun;
+
+	
 
 protected:
 	// Called when the game starts or when spawned
@@ -68,6 +73,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 		FName MuzzleSocketName = TEXT("Muzzle");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		FName GripHandle = TEXT("GripHandle");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		FName RootBoneName = TEXT("");
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Gameplay)
 		TSubclassOf<class UCameraShake> FireShake;
@@ -159,5 +170,5 @@ private:
 	void OnRecoil();
 	float CurrentRecYaw, CurrentRecPitch;
 	bool bRecoil = false;
-	
+	bool bAddedOffset = false;
 };
