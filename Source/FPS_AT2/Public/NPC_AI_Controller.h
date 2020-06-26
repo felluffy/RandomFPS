@@ -29,17 +29,30 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool IsPlayerCommanded;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool AskedAssistance;
+	bool bAskedAssistance;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool HasLOSToEnemy;
+	bool bHasLOSToEnemy;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool ShouldSwapWeapons;
+	bool bHadLOSToEnemyBack;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool ShouldReload;
+	bool bShouldSwapWeapons;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	bool bShouldReload;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bShouldDefend;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+		bool bShouldAttack;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bIsSuspicious;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+		bool bShouldFollow;
+	UPROPERTY(BlueprintReadWrite, Category = "AI")
+	class AFPS_Charachter* CharacterToFollow;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	FVector TargetPoint;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	float AcceptableRadius;
+	
 
 	void CallAssistance();
 };

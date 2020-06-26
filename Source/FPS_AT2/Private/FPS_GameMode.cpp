@@ -10,6 +10,7 @@
 #include "FPS_AT2PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include <utility>
 
 AFPS_GameMode::AFPS_GameMode()
 {
@@ -47,6 +48,7 @@ void AFPS_GameMode::CreateBotControllers()
 {
 	UWorld* World = GetWorld();
 	AFPS_AT2PlayerController* const PlayerController = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 0));
+	AFPS_AT2PlayerController* const PlayerController_2 = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 1));
 	for (auto it = World->GetControllerIterator(); it; it++)
 	{
 		ANPC_AI_Controller* AIC = Cast<ANPC_AI_Controller>(*it);
@@ -58,7 +60,10 @@ void AFPS_GameMode::CreateBotControllers()
 			if (OwnedCharachter && PlayerController)
 			{
 				if (OwnedCharachter->TeamNumber == Cast<AFPS_Charachter>(PlayerController->GetPawn())->TeamNumber)
+				{
 					PlayerController->NPCs.Add(AIC);
+					PlayerController->RegisterredControllersPair.Add(std::make_pair(AIC, false));
+				}
 			}
 		}
 	}

@@ -17,6 +17,9 @@ public:
 		class USkeletalMeshComponent* Mesh3P;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FirstPersonCameraComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		class UCameraComponent* ZoomCameraComponent;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 		class UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
@@ -80,6 +83,9 @@ protected:
 	void CommandBot_3();
 	void CommandBot_4();
 	void OnPressedActionButton();
+	void ZoomInToWeapon();
+	void ZoomOutFromWeapon();
+
 
 public:	
 
@@ -116,6 +122,8 @@ public:
 		bool IsProning = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Locomotion")
 		bool IsCrouching = false;
+	UPROPERTY(BlueprintReadWrite, Category = "Gameplay")
+		bool IsAimingDown = false;
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Player Settings")
 		float DefaultTraceDistance = 1000;

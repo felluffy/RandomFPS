@@ -10,6 +10,8 @@
 #include "Components/InputComponent.h"
 #include "FPS_Charachter.h"
 #include "GameFramework/InputSettings.h"
+#include "FPS_Charachter.h"
+#include "FPS_AT2PlayerController.h"
 #include "Engine.h"
 #include "GameFramework/Actor.h"
 #include "Kismet/GameplayStatics.h"
@@ -49,6 +51,14 @@ AWeaponBase::AWeaponBase()
 	TP_Gun->SetHiddenInGame(true);
 	//UE_LOG(LogTemp, Error, TEXT("Weapon cons called %s - %d - %d"), *GetName(), CurrentAmmo, CurrentAmmoInMagazine);
 	bAddedOffset = false;
+
+	//ZoomCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ZoomCameraComponent"));
+	//ZoomCameraComponent->SetupAttachment(GetRootComponent());
+	
+	//ZoomCameraComponent->SetRelativeScale3D({ .05,.05,.05 });
+	//ZoomCameraComponent->SetRelativeLocation(VectorToTransform.InverseTransformLocation((FP_Gun->GetSocketTransform(ZoomSocketName))))
+
+
 	//Networking here
 }
 
@@ -56,7 +66,9 @@ void AWeaponBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	FTimerHandle Timer;
+	
 	GetWorldTimerManager().SetTimer(Timer, this, &AWeaponBase::DropOnWorld, .1, false);
+	
 }
 
 
@@ -104,7 +116,7 @@ void AWeaponBase::DropOnWorld()
 
 void AWeaponBase::Tick(float DeltaTime)
 {
-	
+	//DrawDebugSphere(GetWorld(), FP_Gun->GetSocketTransform(ZoomSocketName, RTS_Component).GetLocation(), 5, 2, FColor::Red, 10, .2, 0, 2);
 	if (bRecoil)
 	{
 		Owner->AddControllerPitchInput(CurrentRecPitch * DeltaTime * RecoilTimeModifier);
@@ -124,6 +136,11 @@ void AWeaponBase::DroppedOnWorld()
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
+	//ZoomCameraComponent->SetRelativeLocation(FP_Gun->GetSocketTransform(ZoomSocketName, ERelativeTransformSpace::RTS_Component).GetLocation());
+	//ZoomCameraComponent->SetWorldRotation(FP_Gun->GetSocketRotation(ZoomSocketName));
+	//ZoomCameraComponent->Deactivate();
+	//DrawDebugSphere(GetWorld(), ZoomCameraComponent->GetComponentLocation(), 15, 3, FColor::Red, false, 15, 0, 2);
+	//UE_LOG(LogTemp, Warning, TEXT("C++ %s begin play called"), *GetName());
 	CurrentAmmoInMagazine = MagazineAmmoCapacity;
 	CurrentAmmo = MaxAmmo - CurrentAmmoInMagazine;
 	FMath::Clamp<int>(CurrentAmmo, 0, MaxAmmo);
@@ -198,17 +215,21 @@ void AWeaponBase::OnFire()
 
 				OnRecoil();
 
-				//if (ensure(FireSound))
-				//{
-				//	UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
-				//}
+				if (FireSound != NULL)
+				{
+					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
+				}
 
-				//if (ensure(MuzzleEffect))
-				//{
-				//	UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
-				//}
-			}
-			
+				if (MuzzleEffect != NULL)
+				{
+					UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
+				}
+
+				if (FireShake != NULL)
+				{
+					Owner->PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(FireShake, FireShakeAlpha, ECameraAnimPlaySpace::CameraLocal);
+				}
+			}			
 		}
 	}
 	else
@@ -271,6 +292,7 @@ void AWeaponBase::AttachMeshToPawn()
 		
 		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 		TP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
+		//ZoomCameraComponent->AttachToComponent(FP_Gun, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), ZoomSocketName);
 		//FP_Gun->SetWorldLocation({ Owner->GetActorForwardVector() * 30 });
 		auto RootBoneLocation_FP = FP_Gun->GetBoneLocation(RootBoneName);
 		auto HandleLocation_FP = FP_Gun->GetSocketLocation(GripHandle);

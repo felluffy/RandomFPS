@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include <utility>  
 #include "FPS_AT2PlayerController.generated.h"
 
 /**
@@ -26,8 +27,7 @@ public:
 
 	//UPROPERTY(BlueprintAssignable, Category = "Events")
 	//	FOnCallAssistance CallAssistance_NPCs;
-	bool CommandMove(FVector &WorldPosition);
-	void CallAssistance();
+	
 	void DefendAt(FVector &WorldPosition);
 	void AttackTargettedEnenmy(class AFPS_Charachter* EnemyChar);
 	void RegisterBot(int index);
@@ -35,7 +35,9 @@ public:
 	//void 
 
 	TArray<class ANPC_AI_Controller*> NPCs, RegisterredControllers;
-
+	//Either Activated or not
+	TArray<std::pair<class ANPC_AI_Controller*, bool>> RegisterredControllersPair;
+	
 
 	void OnToggleInGameMenu();
 	void OnToggleScoreBoard();
@@ -43,11 +45,33 @@ public:
 	void Test();
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Game Settings")
+	float AcceptanceRadius = 1000.f;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Game Settings")
 		bool bIsInGame;
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void OrderAttack();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void OrderFollow();
-	void OrderGuard();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
+	void OrderGuard(FVector &Location);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void OrderDismiss();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void OrderCallAssistance();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
+	bool CommandMove(FVector &WorldPosition);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
+	void CallAssistance();
+
+	uint8 RegisteredNumberOfBots();
+private:
+	uint8 RegisteredBotsNum;
 };

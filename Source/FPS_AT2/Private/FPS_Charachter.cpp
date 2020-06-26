@@ -41,6 +41,10 @@ AFPS_Charachter::AFPS_Charachter()
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+	ZoomCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ZoomCameraComponent"));
+	ZoomCameraComponent->SetupAttachment(FirstPersonCameraComponent);
+	ZoomCameraComponent->Deactivate();
+	//ZoomCameraComponent->Deactivate();
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
@@ -75,11 +79,18 @@ void AFPS_Charachter::BeginPlay()
 	
 	if(DefaultWeaponClasses.Num() > 0)
 	{
-		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
-		CurrentWeapon->SetOwningPawn(this);
-		CurrentWeapon->AttachMeshToPawn();
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		//SpawnInfo.Owner = this;
+		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0], SpawnInfo);
+		CurrentWeapon->SetOwningPawn(this);
+		CurrentWeapon->AttachMeshToPawn();
+
+		ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
+		ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
+
+		//ZoomCameraComponent->Attach
+		
 		Inventory.Add(CurrentWeapon);
 		if (DefaultWeaponClasses.Num() > 1)
 		{
@@ -158,6 +169,9 @@ void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, AWeaponBase*
 		PreviousWeapon->Unequip();
 	}
 	NewWeapon->Equip();
+
+	ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
+	ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
 }
 
 void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
@@ -305,9 +319,10 @@ void AFPS_Charachter::OrderFollow()
 
 void AFPS_Charachter::OrderGuard()
 {
+	FVector Loc = CurrentObjectHit.Location;
 	UE_LOG(LogTemp, Warning, TEXT("OrderGuard()"));
 	if(PlayerController_AFPS2)
-	PlayerController_AFPS2->OrderGuard();
+		PlayerController_AFPS2->OrderGuard(Loc);
 
 }
 
@@ -421,24 +436,24 @@ void AFPS_Charachter::CommandBot_1()
 	{
 		PlayerController_AFPS2->RegisterBot(0);
 	}
-	if (PlayerController_AFPS2)
-	{
-		//line trace
-		FHitResult Hit;
-		FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
-		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
-		FVector LineTraceEnd = LinetraceStart + (NormalRotation * 5000);	//lline trace range is 500
-		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LineTraceEnd, ECC_Visibility);
-		FVector fv(0, 0, 0);
-		if (Hit.bBlockingHit)
-		{
-			fv = Hit.Location;
-			UE_LOG(LogTemp, Warning, TEXT("ETDTSKKM %f - %f - %f"), fv.X, fv.Y, fv.Z);
-		}
-		UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
+	//if (PlayerController_AFPS2)
+	//{
+	//	//line trace
+	//	FHitResult Hit;
+	//	FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
+	//	FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+	//	FVector LineTraceEnd = LinetraceStart + (NormalRotation * 5000);	//lline trace range is 500
+	//	GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LineTraceEnd, ECC_Visibility);
+	//	FVector fv(0, 0, 0);
+	//	if (Hit.bBlockingHit)
+	//	{
+	//		fv = Hit.Location;
+	//		UE_LOG(LogTemp, Warning, TEXT("ETDTSKKM %f - %f - %f"), fv.X, fv.Y, fv.Z);
+	//	}
+	//	UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
 
-		PlayerController_AFPS2->CommandMove(fv);
-	}
+	//	PlayerController_AFPS2->CommandMove(fv);
+	//}
 }
 void AFPS_Charachter::CommandBot_2()
 {
@@ -485,6 +500,17 @@ void AFPS_Charachter::OnPressedActionButton()
 		}
 		UE_LOG(LogTemp, Error, TEXT("Hit some shit"));//, *(Hit.GetActor()->GetName()));
 	}
+}
+
+void AFPS_Charachter::ZoomInToWeapon()
+{
+	//ZoomCameraComponent->Render;
+
+}
+
+void AFPS_Charachter::ZoomOutFromWeapon()
+{
+
 }
 
 void AFPS_Charachter::AddWeaponToInventory(AWeaponBase* Weapon)
@@ -570,11 +596,11 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 		else
 			MovementComponent->MaxWalkSpeed = 700;
 	}
-	if (OnMovmentShake)
+	if (OnMovmentShake != NULL)
 	{
-		auto CameraShakeScale = (this->GetVelocity().Size()) / 1000;
-		//PlayerController_AFPS2->Getcamera
-		PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnMovmentShake, CameraShakeScale, ECameraAnimPlaySpace::CameraLocal);
+		auto CameraShakeScale = (this->GetVelocity().Size()) / 750.0f;
+		if(CameraShakeScale > 0.0f)
+			PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnMovmentShake, CameraShakeScale, ECameraAnimPlaySpace::CameraLocal);
 	}
 
 	//LINE TRACE AND STORE Value
@@ -621,6 +647,8 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AFPS_Charachter::OnPressedActionButton);
 	PlayerInputComponent->BindAction("AudioCapture", IE_Pressed, this, &AFPS_Charachter::StartRecordingAudio_Implementation);
 	PlayerInputComponent->BindAction("AudioCapture", IE_Released, this, &AFPS_Charachter::StopRecordingAudio_Implementation);
+	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &AFPS_Charachter::ZoomInToWeapon);
+	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &AFPS_Charachter::ZoomOutFromWeapon);
 
 	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);

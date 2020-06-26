@@ -24,7 +24,7 @@ EBTNodeResult::Type UWaypointSelector::ExecuteTask(UBehaviorTreeComponent& Owner
 	auto waypoints = route->GetWaypoints();
 	if (waypoints.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s missing waypoints"), *(AIController->GetName()));
+		//UE_LOG(LogTemp, Warning, TEXT("%s missing waypoints"), *(AIController->GetName()));
 		return EBTNodeResult::Failed;
 	}
 
@@ -34,6 +34,6 @@ EBTNodeResult::Type UWaypointSelector::ExecuteTask(UBehaviorTreeComponent& Owner
 	//cycle index;
 	index = (index + 1) % waypoints.Num();
 	Blackboard->SetValueAsInt(Keys.SelectedKeyName, index);
-	UE_LOG(LogTemp, Warning, TEXT("waypointselector at %s - %d"), *(Blackboard->GetKeyName(2).ToString()), index);
+	//UE_LOG(LogTemp, Warning, TEXT("waypointselector at %s - %d"), *(Blackboard->GetKeyName(2).ToString()), index);
 	return EBTNodeResult::Succeeded;
 }

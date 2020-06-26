@@ -159,6 +159,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
 	bool IsExplosive = false;
 
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	FName ZoomSocketName = "RifleZoomSocket";
+
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	//class UCameraComponent* ZoomCameraComponent;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Transient)
 	class USoundBase* FireSound;
@@ -171,4 +177,5 @@ private:
 	float CurrentRecYaw, CurrentRecPitch;
 	bool bRecoil = false;
 	bool bAddedOffset = false;
+	float FireShakeAlpha = 1.0f;
 };
