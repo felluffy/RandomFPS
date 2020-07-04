@@ -56,7 +56,7 @@ AFPS_Charachter::AFPS_Charachter()
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
 	HealthComp->SetAutoActivate(true);
-	VoiceComponent = CreateDefaultSubobject<UVoiceHttpSTTComponent>(TEXT("VoiceComp"));
+	VoiceComponent = CreateDefaultSubobject<UVoiceHttpSTTComponent>(TEXT("VoiceComp"));	
 	//SynthComponent = CreateDefaultSubobject <USynthComponent>(TEXT("SynthComponent"));
 	//AudioCaptureComponent = CreateDefaultSubobject<UAudioCaptureComponent>(TEXT("AudioCaptureComponent"));
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject< UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComponent"));
@@ -307,7 +307,7 @@ void AFPS_Charachter::OrderAIAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderAIAttack()"));
 	if(PlayerController_AFPS2)
-		PlayerController_AFPS2->OrderAttack();
+		PlayerController_AFPS2->OrderAttack(CurrentObjectHit.Location);
 }
 
 void AFPS_Charachter::OrderFollow()
@@ -339,6 +339,13 @@ void AFPS_Charachter::OrderCallAssistance()
 	UE_LOG(LogTemp, Warning, TEXT("OrderCallAssistance()"));
 	if(PlayerController_AFPS2)
 	PlayerController_AFPS2->CallAssistance();
+}
+
+void AFPS_Charachter::OrderAIGoToLocation(FVector Location, bool FromMap)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OrderAIGoToLocation"))
+		if (PlayerController_AFPS2)
+			PlayerController_AFPS2->CommandMove(Location, FromMap);
 }
 
 void AFPS_Charachter::StartRecordingAudio_Implementation()
@@ -425,7 +432,7 @@ void AFPS_Charachter::CommandBot()
 		}
 		UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
 		
-		PlayerController_AFPS2->CommandMove(fv);
+		PlayerController_AFPS2->CommandMove(fv, false);
 	}
 }
 

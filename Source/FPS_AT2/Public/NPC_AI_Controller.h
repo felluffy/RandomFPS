@@ -22,6 +22,9 @@ private:
 	/* Cached BT component */
 	//UPROPERTY(transient)
 		//class UBehaviorTreeComponent* BehaviorComp;
+
+	//OnChange of any of the variables, select item to scrore and do whichever task
+	void ScoreItems();
 protected: 
 		virtual void OnPossess(class APawn* InPawn) override;
 
@@ -41,13 +44,20 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bShouldDefend;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-		bool bShouldAttack;
+	bool bShouldAttack;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bIsSuspicious;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-		bool bShouldFollow;
+	bool bShouldFollow;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	bool bShouldGuard;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	class AFPS_Charachter* CharacterToFollow;
+	UPROPERTY(BlueprintReadWrite, Category = "AI")
+	class AFPS_Charachter* EnemyCharacterCurrentlyInFocus;
+	UPROPERTY(BlueprintReadWrite, Category = "AI")
+	TArray<AFPS_Charachter*> ThreatList;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	FVector TargetPoint;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")

@@ -6,6 +6,7 @@
 #include "FPS_Charachter.h"
 #include "NavigationSystem.h"
 #include "NavFilters/RecastFilter_UseDefaultArea.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include <vector>
 #include <algorithm>
 #include "EngineGlobals.h"
@@ -14,24 +15,47 @@ void AFPS_AT2PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	//RegisterredControllers = new TArray<ANPC_AI_Controller>();
-	//UE_LOG(LogTemp, Warning, TEXT("idiot"));
 }
 
 
-bool AFPS_AT2PlayerController::CommandMove_Implementation(FVector &WorldPosition)
+bool AFPS_AT2PlayerController::CommandMove_Implementation(FVector &WorldPosition, bool FromMap)
 {
-	if (NPCs.Num() < 1)
-		return false;
 
-	uint8 Index = rand() % NPCs.Num();
-	ANPC_AI_Controller* RandomAI = NPCs[Index];
-	if (RandomAI)
+	//OLD
+	//if (NPCs.Num() < 1)
+	//	return false;
+
+	//uint8 Index = rand() % NPCs.Num();
+	//ANPC_AI_Controller* RandomAI = NPCs[Index];
+	//if (RandomAI)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("BLABBLA %s"), *RandomAI->GetName());
+	//	RandomAI->MoveToLocation(WorldPosition);
+	//	return true;
+	//}
+	//return false;
+	auto Num = RegisteredNumberOfBots();
+	TArray<FVector> Locations;
+	for (int i = 0, j = 0; i != RegisterredControllersPair.Num(); i++)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BLABBLA %s"), *RandomAI->GetName());
-		RandomAI->MoveToLocation(WorldPosition);
-		return true;
+		if (!RegisterredControllersPair[i].second)
+			continue;
+		RegisterredControllersPair[i].first->TargetPoint = WorldPosition;
+		RegisterredControllersPair[i].first->IsPlayerCommanded = true;
+		Locations.Push({ WorldPosition.X, WorldPosition.Y, WorldPosition.Z }), j++;
+		if (Num > 1 && j > 1)
+		{
+			//USE SOME ALGO HERE 
+			FVector SpawnVector;
+			SpawnVector.X = FMath::FRandRange(50, 100);
+			SpawnVector.Y = FMath::FRandRange(50, 100);
+			SpawnVector.Z = FMath::FRandRange(50, 150);
+			RegisterredControllersPair[i].first->TargetPoint += SpawnVector;
+		}
 	}
-	return false;
+	return true;
+		
+
 }
 
 void AFPS_AT2PlayerController::RegisterBot(int index)
@@ -66,7 +90,7 @@ void AFPS_AT2PlayerController::Test()
 	{
 		//UE_LOG(LogTemp, Error, TEXT("%s reporting"), *(RegisterredControllers[i]->GetPawn()->GetName()));
 	}
-	UE_LOG(LogTemp, Error, TEXT("%d reporting"), RegisterredControllers.Num());
+	//UE_LOG(LogTemp, Error, TEXT("%d reporting"), RegisterredControllers.Num());
 
 }
 
@@ -81,9 +105,41 @@ uint8 AFPS_AT2PlayerController::RegisteredNumberOfBots()
 	return Num;
 }
 
-void AFPS_AT2PlayerController::OrderAttack_Implementation()
+void AFPS_AT2PlayerController::OrderAttack_Implementation(FVector &Location)
 {
+	TArray<AActor*> ActorsToIgnore;
+	TArray<AActor*> ActorsOut;
+	TArray<TEnumAsByte<enum EObjectTypeQuery>> objectTypes;
+	objectTypes.Add(EObjectTypeQuery::ObjectTypeQuery1);
+	objectTypes.Add(EObjectTypeQuery::ObjectTypeQuery2);
+	objectTypes.Add(EObjectTypeQuery::ObjectTypeQuery3);
+	ActorsToIgnore.Add(this->GetPawn());
+	for (int i = 0; i != RegisterredControllersPair.Num(); i++)
+	{
+		ActorsToIgnore.Add(Cast<AFPS_Charachter>(RegisterredControllersPair[i].first->GetPawn()));
+	}
+	UKismetSystemLibrary::BoxOverlapActors(GetWorld(), Location, { 300, 300, 100 }, objectTypes, AFPS_Charachter::StaticClass(), ActorsToIgnore, ActorsOut);
 
+	if (ActorsOut.Num() < 1)
+		return;
+	
+	for (int i = 0; i != RegisterredControllersPair.Num(); i++)		
+	{
+		//TODO if not fighting only call them here
+
+		if (RegisterredControllersPair[i].first->bHasLOSToEnemy)
+		{
+			RegisterredControllersPair[i].first->bShouldAttack = true;
+
+			//RegisterredControllersPair[i].first->EnemyCharacterCurrentlyInFocus = Cast<AFPS_Charachter>(ActorsOut[0]);
+		}
+		else
+		{
+			RegisterredControllersPair[i].first->EnemyCharacterCurrentlyInFocus = Cast<AFPS_Charachter>(ActorsOut[0]);
+		}
+		RegisterredControllersPair[i].first->IsPlayerCommanded = true;
+	}
+	return;
 }
 
 void AFPS_AT2PlayerController::OrderFollow_Implementation()
@@ -128,6 +184,8 @@ void AFPS_AT2PlayerController::OrderGuard_Implementation(FVector &Location)
 	//bool navResult = navSystem->ProjectPointToNavigation(HitResult.Location, NavLocation, TeleportFadeTimeExtent);
 	for (int i = 0; i != RegisterredControllersPair.Num(); i++)
 	{
+		if (!RegisterredControllersPair[i].second)
+			continue;
 		if (RegisterredControllersPair[i].first->bHasLOSToEnemy == false)
 		{
 			//bool navResult = navSystem->ProjectPointToNavigation(RegisterredControllersPair[i].first->GetPawn()->GetActorLocation(), Location, FVector::ZeroVector, navData, filterClass);
@@ -136,7 +194,13 @@ void AFPS_AT2PlayerController::OrderGuard_Implementation(FVector &Location)
 			auto Loc = Location;
 			FVector ZV = FVector::ZeroVector;
 			bool navResult = navSystem->ProjectPointToNavigation(Loc, outLocation, ZV, navData, SQF);// , filterClass);
-			UE_LOG(LogTemp, Error, TEXT("%d - casted point to navigation plane"), navResult);
+			//UE_LOG(LogTemp, Error, TEXT("%d - casted point to navigation plane"), navResult);
+			if (navResult)
+			{
+				RegisterredControllersPair[i].first->bShouldGuard = true;
+				RegisterredControllersPair[i].first->TargetPoint = Location;
+				RegisterredControllersPair[i].first->IsPlayerCommanded = true;
+			}
 		}
 	}
 }
@@ -173,6 +237,7 @@ void AFPS_AT2PlayerController::OrderCallAssistance_Implementation()
 		{
 			RegisterredControllersPair[it.second].first->bShouldDefend = true;
 			RegisterredControllersPair[it.second].first->CharacterToFollow = FPSPlayer;
+			RegisterredControllersPair[it.second].first->IsPlayerCommanded = true;
 			SuccessfullyCalledSomeoneInDistance = true;
 		}
 	}
@@ -184,6 +249,7 @@ void AFPS_AT2PlayerController::OrderCallAssistance_Implementation()
 			{
 				RegisterredControllersPair[it.second].first->bShouldDefend = true;
 				RegisterredControllersPair[it.second].first->CharacterToFollow = FPSPlayer;
+				RegisterredControllersPair[it.second].first->IsPlayerCommanded = true;
 				SuccessfullyCalledSomeoneInDistance = true;
 				break;
 			}

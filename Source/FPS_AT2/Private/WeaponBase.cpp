@@ -157,6 +157,12 @@ void AWeaponBase::BeginPlay()
 void AWeaponBase::OnFire()
 {
 	//UE_LOG(LogTemp, Warning, TEXT("%s"), *ProjectileClass->GetName());
+	if (!CurrentAmmoInMagazine)
+	{
+		StopFire();
+		Reload();
+	}
+	
 	if(bAllowedToFire && Owner)
 	if (ProjectileClass != NULL)
 	{

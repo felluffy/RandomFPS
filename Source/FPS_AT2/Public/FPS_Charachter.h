@@ -190,6 +190,8 @@ public:
 	void OrderGuard();
 	void OrderDismiss();
 	void OrderCallAssistance();
+	UFUNCTION(BlueprintCallable)
+		void OrderAIGoToLocation(FVector Location, bool FromMap = true);
 	class AFPS_AT2PlayerController* PlayerController_AFPS2;
 
 

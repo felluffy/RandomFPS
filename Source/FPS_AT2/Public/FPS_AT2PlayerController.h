@@ -51,7 +51,7 @@ public:
 		bool bIsInGame;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
-	void OrderAttack();
+	void OrderAttack(FVector &Location);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void OrderFollow();
@@ -66,7 +66,7 @@ public:
 	void OrderCallAssistance();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
-	bool CommandMove(FVector &WorldPosition);
+	bool CommandMove(FVector &WorldPosition, bool FromMap);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void CallAssistance();

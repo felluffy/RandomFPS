@@ -21,6 +21,11 @@ ANPC_AI_Controller::ANPC_AI_Controller()
 }
 
 
+void ANPC_AI_Controller::ScoreItems()
+{
+
+}
+
 void ANPC_AI_Controller::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
