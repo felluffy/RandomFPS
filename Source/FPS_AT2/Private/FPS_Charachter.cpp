@@ -174,54 +174,6 @@ void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, AWeaponBase*
 	ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
 }
 
-void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
-{
-	//@TODO Drop weapon upon pressing F
-	if(Inventory.Num() <= 1)
-		return;
-	if(!Weapon)
-		return;
-	//if (Inventory.Contains(Weapon))
-	//{
-	//	Weapon->OnLeaveInventory();
-	//	Inventory.RemoveSingle(Weapon);
-	//}
-	if (CurrentWeapon)
-	{
-		FVector CameraLocation;
-		FRotator CameraRotation;
-
-		GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
-		FVector SpawnLocation;
-		FRotator SpawnRotation = CameraRotation;
-		//line trace on where to drop
-		//const FVector LinetraceStart = GetActorLocation();
-		//const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
-		FVector LinetraceStart = Mesh1P->GetBoneLocation("hand_r");//GetFirstPersonCameraComponent()->GetComponentLocation();
-		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
-		FVector LinetraceEnd = LinetraceStart + (NormalRotation * DefaultTraceDistance);
-
-		DrawDebugSphere(GetWorld(), LinetraceEnd, 30, 2, FColor::Red, true, 5);
-		
-		FHitResult Hit;
-		FCollisionQueryParams CollisionParams;
-		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LinetraceEnd, ECC_WorldDynamic, CollisionParams);
-		if (Hit.bBlockingHit)
-			SpawnLocation = Hit.ImpactPoint + (Hit.ImpactNormal * 200);
-		else 
-			SpawnLocation = LinetraceEnd;
-		FActorSpawnParameters SpawnParams;
-		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
-		NewWeapon->DroppedOnWorld();
-		NewWeapon->SetCurrentAmmo(CurrentWeapon->GetCurrentAmmo(), CurrentWeapon->GetCurrentAmmoInMagazine());
-		
-	}
-	Inventory.Remove(CurrentWeapon);
-	SetCurrentWeapon(CurrentWeapon, Inventory[0]);
-
-	Weapon->Destroy();
-	
-}
 
 
 void AFPS_Charachter::OnDropWeapon()
@@ -268,6 +220,11 @@ void AFPS_Charachter::StopFire()
 	{
 		CurrentWeapon->StopFire();
 	}
+}
+
+void AFPS_Charachter::OnMovementPlaySound_Implementation()
+{
+	//MakeNoise(FireSoundScale, Owner, SpawnLocation, FireSoundRange);
 }
 
 void AFPS_Charachter::NextWeapon()
@@ -363,12 +320,24 @@ void AFPS_Charachter::StopRecordingAudio_Implementation()
 void AFPS_Charachter::BeginCrouch()
 {
 	//CurrentWeapon->Unequip();
+	IsCrouching = true;
+	if(IsAimingDown)
+		MovementComponent->MaxWalkSpeed = 150;
+	RecalculateBaseEyeHeight();
+	if (Mesh3P)
+		Mesh3P->RelativeLocation.Z += 44;
 	Crouch();
 }
 
 void AFPS_Charachter::EndCrouch()
-{
+{		
 	//CurrentWeapon->Equip();
+	IsCrouching = false;
+	if (!IsAimingDown)
+		MovementComponent->MaxWalkSpeed = 250;
+	RecalculateBaseEyeHeight();
+	if (Mesh3P)
+		Mesh3P->RelativeLocation.Z -= 44;
 	UnCrouch();
 }
 
@@ -391,11 +360,11 @@ void AFPS_Charachter::Suicide()
 
 void AFPS_Charachter::StartSprinting()
 {
-	if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .1f)
-		MovementComponent->MaxWalkSpeed = 450;
+	if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .9f)
+		MovementComponent->MaxWalkSpeed = 300, IsSprinting = false;
 	else 
-		MovementComponent->MaxWalkSpeed = 700;
-	IsSprinting = true;
+		MovementComponent->MaxWalkSpeed = 700, IsSprinting = true;
+	//IsSprinting = true;
 	bShouldSprint = true;
 	StopFire();
 	bAllowedToFire = false;
@@ -512,12 +481,15 @@ void AFPS_Charachter::OnPressedActionButton()
 void AFPS_Charachter::ZoomInToWeapon()
 {
 	//ZoomCameraComponent->Render;
+	IsAimingDown = true;
+	MovementComponent->MaxWalkSpeed = 250;
 
 }
 
 void AFPS_Charachter::ZoomOutFromWeapon()
 {
-
+	IsAimingDown = false;
+	MovementComponent->MaxWalkSpeed = 300;
 }
 
 void AFPS_Charachter::AddWeaponToInventory(AWeaponBase* Weapon)
@@ -581,6 +553,70 @@ void AFPS_Charachter::OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, fl
 
 }
 
+float AFPS_Charachter::PlayMontage(class UAnimMontage* MontageToPlay, float InPlayRate, FName StartSectionName)
+{
+	if (Mesh1P && Mesh3P && Mesh3P->AnimScriptInstance && Mesh1P->AnimScriptInstance && MontageToPlay)
+	{
+		return Mesh1P->AnimScriptInstance->Montage_Play(MontageToPlay, InPlayRate);
+	}
+	return 0.0f;
+}
+
+void AFPS_Charachter::StopAllMontage()
+{
+	if (Mesh1P && Mesh3P && Mesh3P->AnimScriptInstance && Mesh1P->AnimScriptInstance)
+	{
+		Mesh1P->AnimScriptInstance->Montage_Stop(0.0f);
+		Mesh3P->AnimScriptInstance->Montage_Stop(0.0f);
+	}
+}
+
+bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& OutSeenLocation, int32& NumberOfLoSChecksPerformed, float& OutSightStrength, const AActor* IgnoreActor /*= NULL */) const
+{
+	static const FName NAME_AILineOfSight = FName(TEXT("TestPawnLineOfSight"));
+
+	FHitResult HitResult;
+
+	auto sockets = Mesh3P->GetAllSocketNames();
+
+	for (int i = 0; i < sockets.Num(); i++)
+	{
+		FVector socketLocation = Mesh3P->GetSocketLocation(sockets[i]);
+
+		const bool bHitSocket = GetWorld()->LineTraceSingleByObjectType(HitResult, ObserverLocation, socketLocation
+			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic)) 
+			, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));
+
+		NumberOfLoSChecksPerformed++;
+
+		if (bHitSocket == false || (HitResult.Actor.IsValid() && HitResult.Actor->IsOwnedBy(this))) {
+			OutSeenLocation = socketLocation;
+			OutSightStrength = 1;
+
+			return true;
+		}
+	}
+
+	const bool bHit = GetWorld()->LineTraceSingleByObjectType(HitResult, ObserverLocation, GetActorLocation()
+		, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic))
+		, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));
+
+	NumberOfLoSChecksPerformed++;
+
+	if (bHit == false || (HitResult.Actor.IsValid() && HitResult.Actor->IsOwnedBy(this)))
+	{
+		UE_LOG(LogTemp, Error, TEXT("true"));
+		OutSeenLocation = GetActorLocation();
+		OutSightStrength = 1;
+
+		return true;
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("false"));
+	OutSightStrength = 0;
+	return false;
+}
+
 //void AFPS_Charachter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 //{
 //	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -596,12 +632,12 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 	{
 		UnCrouch();
 	}
-	if (IsSprinting)
+	if (bShouldSprint)
 	{
-		if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .1f)
-			MovementComponent->MaxWalkSpeed = 450;
+		if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .9f)
+			MovementComponent->MaxWalkSpeed = 300, IsSprinting = false;
 		else
-			MovementComponent->MaxWalkSpeed = 700;
+			MovementComponent->MaxWalkSpeed = 700, IsSprinting = true;
 	}
 	if (OnMovmentShake != NULL)
 	{
@@ -614,12 +650,71 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 	FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
 	FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
 	FVector LineTraceEnd = LinetraceStart + (NormalRotation * DefaultTraceDistance);
-	UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, LineTraceEnd, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::None, CurrentObjectHit, true);
+	UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, LineTraceEnd, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::ForOneFrame, CurrentObjectHit, true);
 
 	
 
 	//@TODO: pick up based on what's seen throiugh linetrace from eye to dropped equipment
 
+
+}
+
+void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
+{
+	//@TODO Drop weapon upon pressing F
+	if (Inventory.Num() <= 1)
+		return;
+	if (!Weapon)
+		return;
+	//if (Inventory.Contains(Weapon))
+	//{
+	//	Weapon->OnLeaveInventory();
+	//	Inventory.RemoveSingle(Weapon);
+	//}
+	if (CurrentWeapon)
+	{
+		FVector CameraLocation;
+		FRotator CameraRotation;
+
+		GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
+		FVector SpawnLocation;
+		FRotator SpawnRotation = CameraRotation;
+		//line trace on where to drop
+		//const FVector LinetraceStart = GetActorLocation();
+		//const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
+		FVector LinetraceStart = Mesh3P->GetBoneLocation("hand_r");//GetFirstPersonCameraComponent()->GetComponentLocation();
+		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
+		FVector LinetraceEnd = LinetraceStart + (NormalRotation * 100);
+		//DrawDebugSphere(GetWorld(), LinetraceStart, 30, 8, FColor::Green, true, 5, 0, 2);
+		//DrawDebugSphere(GetWorld(), LinetraceEnd, 30, 8, FColor::Red, true, 5, 0, 2);
+
+		FHitResult Hit;
+		FCollisionQueryParams CollisionParams;
+		CollisionParams.AddIgnoredActor(this);
+		//CollisionParams.
+		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LinetraceEnd, ECC_WorldDynamic, CollisionParams );
+		//UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, line)
+		if (Hit.bBlockingHit)
+		{
+			SpawnLocation = Hit.ImpactPoint + (Hit.ImpactNormal * 200);
+		//	UE_LOG(LogTemp, Warning, TEXT("614"));
+		}
+		else
+		{
+			SpawnLocation = LinetraceEnd;
+		//	UE_LOG(LogTemp, Warning, TEXT("619"));
+		}
+		//	DrawDebugSphere(GetWorld(), SpawnLocation, 30, 8, FColor::Blue, true, 5, 0, 2);
+		FActorSpawnParameters SpawnParams;
+		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+		NewWeapon->DroppedOnWorld();
+		NewWeapon->SetCurrentAmmo(CurrentWeapon->GetCurrentAmmo(), CurrentWeapon->GetCurrentAmmoInMagazine());
+
+	}
+	Inventory.Remove(CurrentWeapon);
+	SetCurrentWeapon(CurrentWeapon, Inventory[0]);
+
+	Weapon->Destroy();
 
 }
 
@@ -660,15 +755,6 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);
 	PlayerInputComponent->BindAction("PreviousItem", IE_Pressed, this, &AFPS_Charachter::PreviousWeapon);
-	//@TODO: NEXT WEAPON AND PREVIOUS WEAPON SETUP SUING MOUSE WHEEL
-	//@TODO: DROP WITH G
-	//@TODO: EQUIP WITH E IF LINE TRACE
-
-	// Enable touchscreen input
-	//EnableTouchscreenMovement(PlayerInputComponent);
-
-	//PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AFPS_AT2Character::OnResetVR);
-
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AFPS_Charachter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AFPS_Charachter::MoveRight);

@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "FPS_Charachter.h"
+#include "AI_Character.h"
 #include "GameFramework/InputSettings.h"
 #include "FPS_Charachter.h"
 #include "FPS_AT2PlayerController.h"
@@ -54,7 +55,7 @@ AWeaponBase::AWeaponBase()
 
 	//ZoomCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ZoomCameraComponent"));
 	//ZoomCameraComponent->SetupAttachment(GetRootComponent());
-	
+
 	//ZoomCameraComponent->SetRelativeScale3D({ .05,.05,.05 });
 	//ZoomCameraComponent->SetRelativeLocation(VectorToTransform.InverseTransformLocation((FP_Gun->GetSocketTransform(ZoomSocketName))))
 
@@ -66,9 +67,9 @@ void AWeaponBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	FTimerHandle Timer;
-	
+
 	GetWorldTimerManager().SetTimer(Timer, this, &AWeaponBase::DropOnWorld, .1, false);
-	
+
 }
 
 
@@ -81,7 +82,7 @@ void AWeaponBase::SetOwningPawn(AFPS_Charachter* NewOwner)
 		SetInstigator(NewOwner);
 		Owner = NewOwner;
 		// net owner for RPC calls
-		SetOwner(NewOwner);	
+		SetOwner(NewOwner);
 		FP_Gun->SetOnlyOwnerSee(true);
 		FP_Gun->bCastDynamicShadow = false;
 		FP_Gun->CastShadow = false;
@@ -128,7 +129,7 @@ void AWeaponBase::DroppedOnWorld()
 {
 	FP_Gun->SetSimulatePhysics(true);
 	FP_Gun->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-	FP_Gun->AddTorqueInRadians(FVector(1, 1, 1) * 4000000);
+	FP_Gun->AddTorqueInRadians(FVector(1, .5, .5) * 40000);
 
 }
 
@@ -148,7 +149,7 @@ void AWeaponBase::BeginPlay()
 	{
 		auto name = *GetOwner()->GetName();
 		//UE_LOG(LogTemp, Warning, TEXT("%s is the owner"), *name);
-		
+
 	}
 	//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
 
@@ -156,86 +157,98 @@ void AWeaponBase::BeginPlay()
 
 void AWeaponBase::OnFire()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("%s"), *ProjectileClass->GetName());
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *ProjectileClass->GetName());
 	if (!CurrentAmmoInMagazine)
 	{
 		StopFire();
 		Reload();
+		return;
 	}
-	
-	if(bAllowedToFire && Owner)
-	if (ProjectileClass != NULL)
+
+	if (bAllowedToFire && Owner)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
-		UWorld* const World = GetWorld();
-		if (World != NULL)
+		if (ProjectileClass != NULL)
 		{
-			bRecoil = false;
-			if (CurrentAmmoInMagazine) // can fire
+			//UE_LOG(LogTemp, Warning, TEXT("%d - %d"), CurrentAmmoInMagazine, CurrentAmmo);
+			UWorld* const World = GetWorld();
+			if (World != NULL)
 			{
-				//UE_LOG(LogTemp, Warning, TEXT("FIRING"));
-				//const FRotator SpawnRotation = FP_MuzzleLocation->GetComponentRotation();
 				bRecoil = false;
-				FRotator SpawnRotation;
-
-				auto Velocity = Owner->GetVelocity();
-				auto Clamped = ClampVector(Velocity, FVector(0.0), FVector(1.0));
-				auto VectorSize = Clamped.Size();
-				
-				FVector SpreadAdjustment = (FVector(FMath::RandRange(-Spread, Spread) * VectorSize, FMath::RandRange(-Spread, Spread) * VectorSize, 0.0));
-		
-				//SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation() + SpreadAdjustment.ToOrientationRotator();;
-				SpawnRotation = Owner->GetControlRotation() + SpreadAdjustment.ToOrientationRotator();;
-				//auto c = 
-				auto Rot = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
-				auto Rot2 = SpreadAdjustment.ToOrientationRotator();
-				//UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_SPAWNRO %f %f %f"), Rot2.Yaw, Rot2.Pitch, Rot2.Roll);
-				//UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_CAMERA %f %f %f"), Rot.Yaw, Rot.Pitch, Rot.Roll);
-				FVector SpawnLocation;
-				if(IsFirstPerson)
+				if (CurrentAmmoInMagazine) // can fire
 				{
-					// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-					SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+					//UE_LOG(LogTemp, Warning, TEXT("FIRING"));
+					//const FRotator SpawnRotation = FP_MuzzleLocation->GetComponentRotation();
+					bRecoil = false;
+					FRotator SpawnRotation;
+
+					auto Velocity = Owner->GetVelocity();
+					auto Clamped = ClampVector(Velocity, FVector(0.0), FVector(1.0));
+					auto VectorSize = Clamped.Size();
+					auto AI_Bot = Cast<AAI_Character>(GetOwner());
+
+					
+					FVector SpreadAdjustment = (FVector(FMath::RandRange(-Spread, Spread) * VectorSize, FMath::RandRange(-Spread, Spread) * VectorSize, 0.0));
+					if (AI_Bot)
+						SpreadAdjustment += {.1, .1, .1};
+					SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation() + SpreadAdjustment.ToOrientationRotator();;
+					//SpawnRotation = Owner->GetControlRotation() + SpreadAdjustment.ToOrientationRotator();;
+					
+					auto Rot = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
+					auto Rot2 = SpreadAdjustment.ToOrientationRotator();
+					////UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_SPAWNRO %f %f %f"), Rot2.Yaw, Rot2.Pitch, Rot2.Roll);
+					////UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_CAMERA %f %f %f"), Rot.Yaw, Rot.Pitch, Rot.Roll);
+					FVector SpawnLocation;
+					if (IsFirstPerson)
+					{
+						// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+						SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+					}
+
+					//else 
+					//	SpawnLocation = ((TP_Gun->GetSocketByName(MuzzleSocketName) != NULL) ? TP_Gun->GetSocketWorldLocationAndRotation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+
+					//Set Spawn Collision Handling Override
+					FActorSpawnParameters ActorSpawnParams;
+					ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+					ActorSpawnParams.Instigator = Owner;
+					ActorSpawnParams.Owner = Owner;
+					// spawn the projectile at the muzzle
+					//FTransform Transform = {()}
+					auto bbb = World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+					bbb->fDamage = this->WeaponDamage;
+					bbb->bIsExplosive = this->IsExplosive;
+					bbb->SetInstigator(Owner);
+					//UGameplayStatics::FinishSpawningActor(bbb);
+					CurrentAmmoInMagazine--;
+					if (CurrentAmmoInMagazine <= 0)
+						bAllowedToFire = false;
+
+					//Add Recoil
+
+					OnRecoil();
+
+					if (FireSound != NULL)
+					{
+						MakeNoise(FireSoundScale, Owner, SpawnLocation, FireSoundRange);
+						UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
+					}
+
+					if (MuzzleEffect != NULL)
+					{
+						UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
+					}
+
+					if (FireShake != NULL)
+					{
+						if(Owner->PlayerController_AFPS2 != NULL)
+							Owner->PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(FireShake, FireShakeAlpha, ECameraAnimPlaySpace::CameraLocal);
+					}
+					if (FireAnimation != NULL)
+					{
+						//Owner->PlayFireAnimation();
+					}
 				}
-
-				//else 
-					//const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
-
-				//Set Spawn Collision Handling Override
-				FActorSpawnParameters ActorSpawnParams;
-				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-				ActorSpawnParams.Instigator = Owner;
-				ActorSpawnParams.Owner = Owner;
-				// spawn the projectile at the muzzle
-				//FTransform Transform = {()}
-				auto bbb = World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-				bbb->fDamage = this->WeaponDamage;
-				bbb->bIsExplosive = this->IsExplosive;
-				bbb->SetInstigator(Owner);
-				//UGameplayStatics::FinishSpawningActor(bbb);
-				CurrentAmmoInMagazine--;
-				if (CurrentAmmoInMagazine <= 0)
-					bAllowedToFire = false;
-
-				//Add Recoil
-
-				OnRecoil();
-
-				if (FireSound != NULL)
-				{
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLocation);
-				}
-
-				if (MuzzleEffect != NULL)
-				{
-					UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, FP_Gun, MuzzleSocketName);
-				}
-
-				if (FireShake != NULL)
-				{
-					Owner->PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(FireShake, FireShakeAlpha, ECameraAnimPlaySpace::CameraLocal);
-				}
-			}			
+			}
 		}
 	}
 	else
@@ -252,7 +265,7 @@ void AWeaponBase::OnRecoil()
 	CurrentRecPitch = FMath::RandRange(RandomRecoilPitchLow, RandomRecoilPitchHigh);
 	CurrentRecYaw = FMath::RandRange(RandomRecoilYawLow, RandomRecoilYawHigh);
 	bRecoil = true;
-		
+
 }
 
 bool AWeaponBase::CanFire()
@@ -294,25 +307,25 @@ void AWeaponBase::AttachMeshToPawn()
 		TP_Gun->SetHiddenInGame(false);
 		FP_Gun->SetOnlyOwnerSee(true);
 		TP_Gun->SetOwnerNoSee(true);
-		
-		
+
+
 		FP_Gun->AttachToComponent(OwnerMesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 		TP_Gun->AttachToComponent(OwnerMesh3P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), AttachPoint);
 		//ZoomCameraComponent->AttachToComponent(FP_Gun, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), ZoomSocketName);
 		//FP_Gun->SetWorldLocation({ Owner->GetActorForwardVector() * 30 });
 		auto RootBoneLocation_FP = FP_Gun->GetBoneLocation(RootBoneName);
 		auto HandleLocation_FP = FP_Gun->GetSocketLocation(GripHandle);
-		
+
 		auto RootBoneLocation_TP = TP_Gun->GetBoneLocation(RootBoneName);
 		auto HandleLocation_TP = TP_Gun->GetSocketLocation(GripHandle);
-		
+
 		auto Difference_FP = RootBoneLocation_FP - HandleLocation_FP;//FVector::Distance(RootBoneLocation, HandleLocation);
 		auto Difference_TP = RootBoneLocation_TP - HandleLocation_TP;
 		if (!bAddedOffset)
 		{
 			FP_Gun->AddWorldOffset(Difference_FP);
 			TP_Gun->AddWorldOffset(Difference_TP);
-			
+
 			bAddedOffset = true;
 		}
 	}
@@ -330,7 +343,7 @@ void AWeaponBase::Unequip()
 void AWeaponBase::Equip()
 {
 	this->SetActorTickEnabled(true);
-	FP_Gun->SetHiddenInGame( false );
+	FP_Gun->SetHiddenInGame(false);
 	TP_Gun->SetHiddenInGame(false);
 	bAllowedToFire = true;
 	AttachMeshToPawn();
@@ -338,20 +351,22 @@ void AWeaponBase::Equip()
 
 void AWeaponBase::Reload()
 {
-	StopFire();
-	
-	//reload conditions
-	//UE_LOG(LogTemp, Warning, TEXT("RELOADING"));
-	if (CurrentAmmoInMagazine == MagazineAmmoCapacity || CurrentAmmo <= 0)
-		return;
-	float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
-	
-	//GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, 5.0f, false);
-	GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, this, &AWeaponBase::ReloadWeapon, ReloadTime, false);
+	if (!bIsReloading)
+	{
 
-	//Play Reload Animation
+		StopFire();
+		Owner->SetCanSwapWeapons(false);
+		if (CurrentAmmoInMagazine == MagazineAmmoCapacity)
+			return;
+		bAllowedToFire = false;
+		bIsReloading = true;
+		//float FirstDelay = FMath::Max(fLastFireTime + fIntervalShootingTime - GetWorld()->TimeSeconds, 0.0f);
 
-	
+		GetWorldTimerManager().SetTimer(TimerHandle_fReloadTime, this, &AWeaponBase::ReloadWeapon, ReloadTime, false);
+
+		//Play Reload Animation
+	}
+
 
 }
 
@@ -365,9 +380,12 @@ void AWeaponBase::ReloadWeapon()
 	CurrentAmmo -= CurrentAmmoInMagazine;
 	if (ReloadSound)
 	{
+		MakeNoise(ReloadSoundScale, Owner, GetActorLocation(), ReloadSoundRange);
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReloadSound, GetActorLocation());
 	}
 	bAllowedToFire = true;
+	bIsReloading = false;
+	Owner->SetCanSwapWeapons(true);
 }
 
 void AWeaponBase::SetCurrentAmmo(int32 _CurrentAmmo, int32 _CurrentAmmoInMagazine)

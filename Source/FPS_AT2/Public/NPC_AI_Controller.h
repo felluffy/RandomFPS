@@ -51,6 +51,8 @@ public:
 	bool bShouldFollow;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bShouldGuard;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	bool bShouldCrouchInCover;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	class AFPS_Charachter* CharacterToFollow;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")

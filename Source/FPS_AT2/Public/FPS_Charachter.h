@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Perception/AISightTargetInterface.h"
 #include "FPS_Charachter.generated.h"
 
 UCLASS()
-class FPS_AT2_API AFPS_Charachter : public ACharacter
+class FPS_AT2_API AFPS_Charachter : public ACharacter, public IAISightTargetInterface
 {
 	GENERATED_BODY()
 public:
@@ -132,7 +133,6 @@ private:
 	FHitResult CurrentObjectHit;
 
 
-
 protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = Weapons)
@@ -149,14 +149,16 @@ protected:
 	void RemoveWeapon(class AWeaponBase* Weapon);
 	void AddWeapon(class AWeaponBase* Weapon);
 	void AddWeaponToInventory(class AWeaponBase* Weapon);
-	UPROPERTY(EditDefaultsOnly, Category = "Weapons")
+	UPROPERTY(EditDefaultsOnly, Category = "Weapons")	
 	float DropWeaponMaxDistance;
 	void Reload();
-
+	bool bCanSwapWeapons = true;
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void StartFire();
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void StopFire();
+	UFUNCTION(BlueprintNativeEvent, Category = "Movement")
+		void OnMovementPlaySound();
 	void NextWeapon();
 	void PreviousWeapon();
 	bool CanFire();
@@ -166,7 +168,8 @@ protected:
 public: 
 	//UPROPERTY(BlueprintCallable, Category = "Weapons")
 	//	AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }
-
+	void SetCanSwapWeapons(bool Allowed) { bCanSwapWeapons = Allowed; }
+	bool GetCanSwapWeapons() { return bCanSwapWeapons; }
 
 private:
 	float LastNoiseTime;
@@ -211,4 +214,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 		virtual void OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, float AccuracyScore, FString SentenceRetreived);
 	FString RecognizedWord;
+
+private:
+	float PlayMontage(class UAnimMontage* MontageToPlay, float InPlayRate, FName StartSectionName);
+	void StopAllMontage();
+
+public:
+	virtual bool CanBeSeenFrom(
+		const FVector& ObserverLocation,
+		FVector& OutSeenLocation,
+		int32& NumberOfLoSChecksPerformed,
+		float& OutSightStrength,
+		const AActor* IgnoreActor = NULL
+	) const override;
 };

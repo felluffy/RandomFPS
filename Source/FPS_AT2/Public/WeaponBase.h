@@ -16,6 +16,17 @@ enum class EWeaponState
 };
 
 
+USTRUCT()
+struct FWeaponAnim
+{
+	GENERATED_USTRUCT_BODY()
+	UPROPERTY(EditDefaultsOnly, Category = Animation)
+		UAnimMontage* Pawn1P;
+	UPROPERTY(EditDefaultsOnly, Category = Animation)
+		UAnimMontage* Pawn3P;
+};
+
+
 UCLASS()
 class FPS_AT2_API AWeaponBase : public AActor
 {
@@ -94,6 +105,15 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
 		float fIntervalShootingTime = .2f;
 
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float FireSoundScale = .2f;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float FireSoundRange = 2000.0f;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float ReloadSoundScale = .2f;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float ReloadSoundRange = 2000.0f;
+
 	FTimerHandle TimerHandle_fIntervalShootingTime, TimerHandle_fReloadTime, TimerHandle_fRecoilTime;
 	void GiveAmmo(int AddAmount);
 
@@ -162,6 +182,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
 	FName ZoomSocketName = "RifleZoomSocket";
 
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Properties)
+	FWeaponAnim Animations;
+
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	//class UCameraComponent* ZoomCameraComponent;
 
@@ -178,4 +201,5 @@ private:
 	bool bRecoil = false;
 	bool bAddedOffset = false;
 	float FireShakeAlpha = 1.0f;
+	bool bIsReloading;
 };
