@@ -132,6 +132,7 @@ public:
 	void SetCurrentAmmo(int32 CurrentAmmo, int32 CurrentAmmoInMagazine);
 	int32 GetCurrentAmmo() { return CurrentAmmo; };
 	int32 GetCurrentAmmoInMagazine() { return CurrentAmmoInMagazine; };
+	int32 GetMagazineAmmoCapacity() { return MagazineAmmoCapacity; }
 	//Which to fire from, FP, or 3P
 	bool IsFirstPerson = true;
 
@@ -142,7 +143,7 @@ public:
 	protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
 	int32 MaxAmmo;
-	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Weapon_Classifiers)
 	int32 MagazineAmmoCapacity;
 	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	int32 CurrentAmmoInMagazine;

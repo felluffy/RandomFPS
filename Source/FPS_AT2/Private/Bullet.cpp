@@ -74,9 +74,14 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 // 			UGameplayStatics::ApplyRadialDamageWithFalloff(GetWorld(), fDamage, 0, 
 		if (Hit.BoneName == "head")
 			fDamage *= 4;
-		if(fDamage > 0)
-			UGameplayStatics::ApplyPointDamage(OtherActor, fDamage, GetActorLocation(), Hit, this->GetInstigator()->GetController(), this, UDamageType::StaticClass());		
 		UE_LOG(LogTemp, Warning, TEXT("%s hit %s actor at bone %s"), *OtherActor->GetName(), *HitComp->GetName(), *Hit.BoneName.ToString());
+
+		if(fDamage > 0)
+		{
+			UGameplayStatics::ApplyPointDamage(OtherActor, fDamage, GetActorLocation(), Hit, this->GetInstigator()->GetController(), this, UDamageType::StaticClass());		
+			
+			//UGameplayStatics::ReportDam
+		}
 		//@TODO Add decal on impact
 		//UGameplayStatics::SpawnDecalAtLocation(GetWorld(), )
 		

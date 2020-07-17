@@ -186,24 +186,24 @@ void AWeaponBase::OnFire()
 					auto VectorSize = Clamped.Size();
 					auto AI_Bot = Cast<AAI_Character>(GetOwner());
 
-					
+
 					FVector SpreadAdjustment = (FVector(FMath::RandRange(-Spread, Spread) * VectorSize, FMath::RandRange(-Spread, Spread) * VectorSize, 0.0));
-					if (AI_Bot)
-						SpreadAdjustment += {.1, .1, .1};
+					/*if (AI_Bot)
+						SpreadAdjustment += {.1, .1, .1};*/
 					SpawnRotation = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation() + SpreadAdjustment.ToOrientationRotator();;
 					//SpawnRotation = Owner->GetControlRotation() + SpreadAdjustment.ToOrientationRotator();;
-					
+
 					auto Rot = Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetComponentRotation();
 					auto Rot2 = SpreadAdjustment.ToOrientationRotator();
 					////UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_SPAWNRO %f %f %f"), Rot2.Yaw, Rot2.Pitch, Rot2.Roll);
 					////UE_LOG(LogTemp, Warning, TEXT(" CYKA BLYAT ROT_CAMERA %f %f %f"), Rot.Yaw, Rot.Pitch, Rot.Roll);
 					FVector SpawnLocation;
-					if (IsFirstPerson)
+					//if (IsFirstPerson)
 					{
 						// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
 						SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 					}
-
+					//DrawDebugSphere(GetWorld(), FP_MuzzleLocation->GetComponentLocation(), 10, 2, FColor::Yellow, false, 3, 0, 5);
 					//else 
 					//	SpawnLocation = ((TP_Gun->GetSocketByName(MuzzleSocketName) != NULL) ? TP_Gun->GetSocketWorldLocationAndRotation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
@@ -214,10 +214,14 @@ void AWeaponBase::OnFire()
 					ActorSpawnParams.Owner = Owner;
 					// spawn the projectile at the muzzle
 					//FTransform Transform = {()}
+					//World->spawnactor
 					auto bbb = World->SpawnActor<ABullet>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-					bbb->fDamage = this->WeaponDamage;
-					bbb->bIsExplosive = this->IsExplosive;
-					bbb->SetInstigator(Owner);
+					if (bbb)
+					{
+						bbb->fDamage = this->WeaponDamage;
+						bbb->bIsExplosive = this->IsExplosive;
+						//bbb->SetInstigator(Owner);
+					}
 					//UGameplayStatics::FinishSpawningActor(bbb);
 					CurrentAmmoInMagazine--;
 					if (CurrentAmmoInMagazine <= 0)
@@ -240,7 +244,7 @@ void AWeaponBase::OnFire()
 
 					if (FireShake != NULL)
 					{
-						if(Owner->PlayerController_AFPS2 != NULL)
+						if (Owner->PlayerController_AFPS2 != NULL)
 							Owner->PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(FireShake, FireShakeAlpha, ECameraAnimPlaySpace::CameraLocal);
 					}
 					if (FireAnimation != NULL)

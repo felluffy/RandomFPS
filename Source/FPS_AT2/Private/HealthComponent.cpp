@@ -4,6 +4,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Actor.h"
 #include "FPS_Charachter.h"
+#include "Perception/AISense_Damage.h"
 #include "GameFramework/PlayerController.h"
 
 
@@ -61,7 +62,9 @@ void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const 
 			CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
 			UE_LOG(LogTemp, Log, TEXT("Health at %f tan"), CurrentHealth);
 
+			
 			OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
+
 		}
 		else
 			SpecialDamageType = false;
@@ -71,14 +74,17 @@ void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const 
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Any DAMAGE"));
 		if (Damage <= 0.0f)//|| !InstigatedBy)
-		{
+		{	
 			UE_LOG(LogTemp, Warning, TEXT("Failed to cause damage"));
 			return;
 		}
 		CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
 		UE_LOG(LogTemp, Log, TEXT("Health at %f"), CurrentHealth);
 
-		OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
+		//OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
+		
+		//To relocate to character object
+		//UAISense_Damage::ReportDamageEvent(DamagedActor, DamagedActor, InstigatedBy->GetCharacter(), Damage, InstigatedBy->GetCharacter()->GetActorLocation(), DamagedActor->GetActorLocation());
 	}
 }
 

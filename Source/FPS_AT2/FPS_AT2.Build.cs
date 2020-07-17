@@ -14,6 +14,6 @@ public class FPS_AT2 : ModuleRules
             }
         );
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "AIModule", "GameplayTasks", "OnlineSubsystem", "NavigationSystem", "Http", "Json", "JsonUtilities", "Voice", "UMG" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "AIModule", "GameplayTasks", "OnlineSubsystem", "NavigationSystem", "Http", "Json", "JsonUtilities", "Voice", "UMG", "AudioCapture" });
 	}
 }

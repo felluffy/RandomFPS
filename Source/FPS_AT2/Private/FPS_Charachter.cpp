@@ -17,6 +17,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/SynthComponent.h"
 #include "FPS_AT2PlayerController.h"
+#include "AudioCaptureComponent.h"
 #include "VoiceHttpSTTComponent.h"
 #include "GameFramework/DamageType.h"
 #include "WeaponBase.h"
@@ -28,7 +29,7 @@ AFPS_Charachter::AFPS_Charachter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	GetCapsuleComponent()->InitCapsuleSize(50.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(40.f, 96.0f);
 	Mesh3P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh3P"));
 	Mesh3P->SetupAttachment(GetCapsuleComponent());
 	Mesh3P->bCastDynamicShadow = true;
@@ -58,7 +59,7 @@ AFPS_Charachter::AFPS_Charachter()
 	HealthComp->SetAutoActivate(true);
 	VoiceComponent = CreateDefaultSubobject<UVoiceHttpSTTComponent>(TEXT("VoiceComp"));	
 	//SynthComponent = CreateDefaultSubobject <USynthComponent>(TEXT("SynthComponent"));
-	//AudioCaptureComponent = CreateDefaultSubobject<UAudioCaptureComponent>(TEXT("AudioCaptureComponent"));
+	AudioCaptureComponent = CreateDefaultSubobject<UAudioCaptureComponent>(TEXT("AudioCaptureComponent"));
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject< UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComponent"));
 	PerceptionStimuliSourceComponent->SetAutoActivate(true);
 
@@ -125,6 +126,8 @@ void AFPS_Charachter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
+		if(Value < 0)
+			Value /= 1.5;
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
 }
@@ -134,7 +137,7 @@ void AFPS_Charachter::MoveRight(float Value)
 	if (Value != 0.0f)
 	{
 		// add movement in that direction
-		
+		Value /= 1.25;
 		AddMovementInput(GetActorRightVector(), Value);
 	}
 }
@@ -326,6 +329,7 @@ void AFPS_Charachter::BeginCrouch()
 	RecalculateBaseEyeHeight();
 	if (Mesh3P)
 		Mesh3P->RelativeLocation.Z += 44;
+		//Mesh3P->SetRelativeLocation(Get)
 	Crouch();
 }
 
@@ -529,6 +533,7 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 		Mesh3P->SetAllBodiesSimulatePhysics(true);
 		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Mesh3P->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_MAX);
+		//DropWeapon(CurrentWeapon);
 
 		DetachFromControllerPendingDestroy();
 		UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
@@ -579,10 +584,11 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 
 	auto sockets = Mesh3P->GetAllSocketNames();
 
+
 	for (int i = 0; i < sockets.Num(); i++)
 	{
 		FVector socketLocation = Mesh3P->GetSocketLocation(sockets[i]);
-
+		UE_LOG(LogTemp, Error, TEXT("Socket -Name checked: %s"), *(sockets[i].ToString()));
 		const bool bHitSocket = GetWorld()->LineTraceSingleByObjectType(HitResult, ObserverLocation, socketLocation
 			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic)) 
 			, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));
@@ -662,7 +668,7 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 {
 	//@TODO Drop weapon upon pressing F
-	if (Inventory.Num() <= 1)
+	if (Inventory.Num() <= 1 && !bInactive)
 		return;
 	if (!Weapon)
 		return;
@@ -712,10 +718,9 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 
 	}
 	Inventory.Remove(CurrentWeapon);
-	SetCurrentWeapon(CurrentWeapon, Inventory[0]);
-
+	if(!bInactive)
+		SetCurrentWeapon(CurrentWeapon, Inventory[0]);
 	Weapon->Destroy();
-
 }
 
 

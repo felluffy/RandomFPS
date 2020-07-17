@@ -25,8 +25,8 @@ public:
 		class UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 		class UVoiceHttpSTTComponent* VoiceComponent;
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "STT")
-	//class UAudioCaptureComponent* AudioCaptureComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UAudioCaptureComponent* AudioCaptureComponent;
 	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "STT")
 	class USynthComponent* SynthComponent;*/
 
@@ -71,12 +71,16 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 
+	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void BeginCrouch();
+	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void EndCrouch();
 	void Jump() override;
 	void StopJumping() override;
 	void Suicide();
+	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void StartSprinting();
+	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void StopSprinting();
 	void CommandBot();
 	void CommandBot_1();
@@ -131,7 +135,8 @@ public:
 private:
 	FVector CurrentLocationEyeDistanceEnd;
 	FHitResult CurrentObjectHit;
-
+public:
+	FHitResult GetEyeTrace() { return CurrentObjectHit; }
 
 protected:
 
@@ -151,20 +156,23 @@ protected:
 	void AddWeaponToInventory(class AWeaponBase* Weapon);
 	UPROPERTY(EditDefaultsOnly, Category = "Weapons")	
 	float DropWeaponMaxDistance;
+	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void Reload();
 	bool bCanSwapWeapons = true;
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void StartFire();
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void StopFire();
-	UFUNCTION(BlueprintNativeEvent, Category = "Movement")
-		void OnMovementPlaySound();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void NextWeapon();
+	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void PreviousWeapon();
 	bool CanFire();
 
 	bool isReloading = false; //should deactivate on a broadcast from weappon 
-
+	UFUNCTION(BlueprintNativeEvent, Category = "Movement")
+	void OnMovementPlaySound();
 public: 
 	//UPROPERTY(BlueprintCallable, Category = "Weapons")
 	//	AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }

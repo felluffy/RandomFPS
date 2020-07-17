@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Components/BoxComponent.h"
 #include "NPC_AI_Controller.generated.h"
 
 /**
@@ -15,6 +16,9 @@ class FPS_AT2_API ANPC_AI_Controller : public AAIController
 	GENERATED_BODY()
 public:
 	ANPC_AI_Controller();
+	virtual void UpdateControlRotation(float DeltaTime, bool bUpdatePawn = true) override;
+	virtual void SetFocalPoint(FVector NewFocus, EAIFocusPriority::Type InPriority = EAIFocusPriority::Gameplay) override;
+	virtual void BeginPlay() override;
 private:
 	//UPROPERTY(transient)
 	//	UBlackboardComponent* BlackboardComp;
@@ -48,22 +52,36 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bIsSuspicious;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	bool bHeardAnything;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bShouldFollow;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bShouldGuard;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	bool bShouldCrouchInCover;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+	bool bEnemyAround;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	class AFPS_Charachter* CharacterToFollow;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	class AFPS_Charachter* EnemyCharacterCurrentlyInFocus;
+	//Convert to priority queue later
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	TArray<AFPS_Charachter*> ThreatList;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	TArray<class ADefendArea*> DefenseAreas;
+	UPROPERTY(BlueprintReadWrite, Category = "AI")
+	class AAI_Character* OwningPawn;
+
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	FVector TargetPoint;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
 	float AcceptableRadius;
+
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	bool ShouldCrouchBehindCover();
+
 	
 
 	void CallAssistance();
