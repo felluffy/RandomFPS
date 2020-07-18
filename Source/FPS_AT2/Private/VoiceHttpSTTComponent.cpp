@@ -15,7 +15,11 @@ UVoiceHttpSTTComponent::UVoiceHttpSTTComponent()
 	Http = &FHttpModule::Get();
 	URL = TEXT("https://centralindia.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=detailed");
 	FileLocation = TEXT("C:\\Programming Tools\\Unreal Projects\\ABC.wav");
+<<<<<<< HEAD
 	OAuthToken = TEXT("");
+=======
+	OAuthToken = TEXT("fcafc499185f474388c6c46e13a44d71");
+>>>>>>> parent of 804179b... Delete VoiceHttpSTTComponent.cpp
 	VerbType = "POST";
 }
 
