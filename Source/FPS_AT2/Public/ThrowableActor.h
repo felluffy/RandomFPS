@@ -19,7 +19,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Particles)
 		TArray<class UParticleSystem*> ExplosionParticles;
 
-
+	
 public:	
 	// Sets default values for this actor's properties
 	AThrowableActor();

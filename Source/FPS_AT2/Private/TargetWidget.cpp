@@ -22,6 +22,8 @@ ATargetWidget::ATargetWidget()
 void ATargetWidget::BeginPlay()
 {
 	Super::BeginPlay();
+	//GetWorldTimerManager().SetTimer(FadeInTimerHandle, &ATargetWidget::FadeIn, 0, false);
+	//GetWorldTimerManager().SetTimer(FadeOuTimerHandle, &ATargetWidget::FadeOut, 5, false);
 	
 }
 
@@ -35,9 +37,17 @@ void ATargetWidget::Tick(float DeltaTime)
 	
 }
 
-void ATargetWidget::FadeOut(float DeltaTime)
+void ATargetWidget::FadeOut()
 {
+	
+	//FMath::FInterpTo(CurrentWeapon->GetWeaponFov(), DefaultFieldOfView, GetWorld()->GetDeltaSeconds(), .8f);
+	
 	//FLinearColor FLC = FrontFace->TintColorAndOpacity;
 	//FrontFace->SetTintColorAndOpacity()
 	//FrontFace->TintColorAndOpacity.A
+}
+
+void ATargetWidget::FadeIn()
+{
+
 }

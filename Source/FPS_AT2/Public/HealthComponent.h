@@ -9,7 +9,6 @@
 
 //on health change event
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnHealhChangedSignature, UHealthComponent*, HealthComponent, float, Health, float, HealthDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class FPS_AT2_API UHealthComponent : public UActorComponent
 {

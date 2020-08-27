@@ -7,9 +7,24 @@
 #include "Components/BoxComponent.h"
 #include "NPC_AI_Controller.generated.h"
 
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCalledForAssistance, ANPC_AI_Controller*, AI_Con, ANPC_AI_Controller*, Requester);
+
 /**
- * 
+ *
  */
+USTRUCT(BlueprintType)
+struct FCoverType
+{
+	GENERATED_USTRUCT_BODY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Cover)
+		bool FreeUP;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Cover)
+		bool FreeLeft;	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Cover)
+		bool FreeRight;
+};
+
+
 UCLASS()
 class FPS_AT2_API ANPC_AI_Controller : public AAIController
 {
@@ -29,60 +44,66 @@ private:
 
 	//OnChange of any of the variables, select item to scrore and do whichever task
 	void ScoreItems();
-protected: 
-		virtual void OnPossess(class APawn* InPawn) override;
+public:
+	virtual void OnPossess(class APawn* InPawn) override;
+	UFUNCTION(BlueprintCallable, Category = "Algorithms")
+	void ReOrderByDistance(TArray<AActor*> Actors, bool OrderByLower = true);
+
 
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool IsPlayerCommanded;
+		bool IsPlayerCommanded;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bAskedAssistance;
+		bool bAskedAssistance;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bHasLOSToEnemy;
+		bool bHasLOSToEnemy;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bHadLOSToEnemyBack;
+		bool bHadLOSToEnemyBack;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldSwapWeapons;
+		bool bShouldSwapWeapons;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldReload;
+		bool bShouldReload;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldDefend;
+		bool bShouldDefend;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldAttack;
+		bool bShouldAttack;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bIsSuspicious;
+		bool bIsSuspicious;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bHeardAnything;
+		bool bHeardAnything;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldFollow;
+		bool bShouldFollow;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldGuard;
+		bool bShouldGuard;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bShouldCrouchInCover;
+		bool bShouldCrouchInCover;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	bool bEnemyAround;
+		bool bEnemyAround;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
-	class AFPS_Charachter* CharacterToFollow;
+		class AFPS_Charachter* CharacterToFollow;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
-	class AFPS_Charachter* EnemyCharacterCurrentlyInFocus;
+		class AFPS_Charachter* EnemyCharacterCurrentlyInFocus;
 	//Convert to priority queue later
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
-	TArray<AFPS_Charachter*> ThreatList;
+		TArray<AFPS_Charachter*> ThreatList;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	TArray<class ADefendArea*> DefenseAreas;
+		TArray<class ADefendArea*> DefenseAreas;
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
-	class AAI_Character* OwningPawn;
+		class AAI_Character* OwningPawn;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
+		FVector CurrentCoverLocation;
 
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	FVector TargetPoint;
+		FVector TargetPoint;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
-	float AcceptableRadius;
+		float AcceptableRadius;
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	bool ShouldCrouchBehindCover();
+		bool ShouldCrouchBehindCover();
 
-	
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Cover)
+	FCoverType CoverTypes;
+protected:
 	void CallAssistance();
 };

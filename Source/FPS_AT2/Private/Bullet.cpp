@@ -76,7 +76,7 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 			fDamage *= 4;
 		UE_LOG(LogTemp, Warning, TEXT("%s hit %s actor at bone %s"), *OtherActor->GetName(), *HitComp->GetName(), *Hit.BoneName.ToString());
 
-		if(fDamage > 0)
+	if(fDamage > 0)
 		{
 			UGameplayStatics::ApplyPointDamage(OtherActor, fDamage, GetActorLocation(), Hit, this->GetInstigator()->GetController(), this, UDamageType::StaticClass());		
 			
@@ -87,18 +87,18 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 		
 	}
 	//DrawDebugSphere(GetWorld(), Hit.Location, 50, 6, FColor::White, false, 5.0f, 0, 5.0);
-	PlayParticle();
-	ApplyDecal();	
+	PlayParticle(Hit);
+	ApplyDecal(Hit);	
 	Destroy();
 }
 
 
-void ABullet::PlayParticle()
+void ABullet::PlayParticle(const FHitResult& Hit)
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle, FTransform(GetActorLocation()));
 }
 
-void ABullet::ApplyDecal()
+void ABullet::ApplyDecal(const FHitResult& Hit)
 {
 	if (BulletImpactHoles.Num() > 0)
 	{

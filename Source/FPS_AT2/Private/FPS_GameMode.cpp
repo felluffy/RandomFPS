@@ -8,6 +8,7 @@
 #include "FPS_Charachter.h"
 #include "NPC_AI_Controller.h"
 #include "FPS_AT2PlayerController.h"
+#include "AI_Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include <utility>
@@ -29,6 +30,7 @@ void AFPS_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	CreateBotControllers();
+	//RegisterAllToDelegates();
 }
 
 ANPC_AI_Controller* AFPS_GameMode::CreateBot(int32 BotNum)
@@ -47,8 +49,9 @@ void AFPS_GameMode::DestroyActorFunction()
 void AFPS_GameMode::CreateBotControllers()
 {
 	UWorld* World = GetWorld();
-	AFPS_AT2PlayerController* const PlayerController = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 0));
+	AFPS_AT2PlayerController* const PlayerController_1 = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 0));
 	AFPS_AT2PlayerController* const PlayerController_2 = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 1));
+	
 	for (auto it = World->GetControllerIterator(); it; it++)
 	{
 		ANPC_AI_Controller* AIC = Cast<ANPC_AI_Controller>(*it);
@@ -56,13 +59,34 @@ void AFPS_GameMode::CreateBotControllers()
 		{
 			//CreateBot()
 			AFPS_Charachter* OwnedCharachter = Cast<AFPS_Charachter>(AIC->GetPawn());
-			ExistingBots++;
-			if (OwnedCharachter && PlayerController)
+			AFPS_Charachter* TeamALeader = NULL;
+			AFPS_Charachter* TeamBLeader = NULL;
+			if(PlayerController_1)
 			{
-				if (OwnedCharachter->TeamNumber == Cast<AFPS_Charachter>(PlayerController->GetPawn())->TeamNumber)
+				TeamALeader =  Cast<AFPS_Charachter>(PlayerController_1->GetPawn());
+				PlayerController_1->RegisterredControllersPair.Empty();
+			}
+			if(PlayerController_2)
+			{
+				TeamBLeader =  Cast<AFPS_Charachter>(PlayerController_2->GetPawn());
+				PlayerController_2->RegisterredControllersPair.Empty();
+			}
+			ExistingBots++;
+			if (OwnedCharachter && PlayerController_1)
+			{
+				AAI_Character* Ai = Cast<AAI_Character>(AIC->GetPawn());
+				if (TeamALeader != NULL && OwnedCharachter->TeamNumber == TeamALeader->TeamNumber)
 				{
-					PlayerController->NPCs.Add(AIC);
-					PlayerController->RegisterredControllersPair.Add(std::make_pair(AIC, false));
+					
+					if(Ai)
+						PlayerController_1->AIChars.Add(Ai);
+					PlayerController_1->RegisterredControllersPair.Add(std::make_pair(AIC, false));
+				}
+				else if (TeamBLeader != NULL && OwnedCharachter->TeamNumber == TeamBLeader->TeamNumber)
+				{
+					if (Ai)
+						PlayerController_2->AIChars.Add(Ai);
+					PlayerController_2->RegisterredControllersPair.Add(std::make_pair(AIC, false));
 				}
 			}
 		}

@@ -7,6 +7,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "WeaponBase.h"
 #include "Components/CapsuleComponent.h"
+#include "Camera/CameraComponent.h"
+#include "VoiceHttpSTTComponent.h"
 #include "PatrolComponent.h"
 
 AAI_Character::AAI_Character()
@@ -15,6 +17,8 @@ AAI_Character::AAI_Character()
 	AIControllerClass = ANPC_AI_Controller::StaticClass();
 	bUseControllerRotationYaw = true;
 	PatrolComp = CreateDefaultSubobject<UPatrolComponent>(TEXT("Patrol Component"));
+	VoiceComponent->Deactivate();
+	//FirstPersonCameraComponent->Deactivate();	
 
 }
 
@@ -55,22 +59,34 @@ void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Hea
 		bInactive = true;
 		GetMovementComponent()->StopMovementImmediately();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		AController* CurrentController = GetController();
-		if (CurrentController)
-		{
-			CurrentController->UnPossess();
-			//CurrentController->StopMovement();
-			CurrentController->Destroy();
-			UE_LOG(LogTemp, Warning, TEXT("%s controller AI_CHAR"), *CurrentController->GetName());
-		}
-
-		DetachFromControllerPendingDestroy();
-		UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
+		//AController* CurrentController = GetController();
+		//if (CurrentController)
+		//{
+		//	CurrentController->UnPossess();
+		//	//CurrentController->StopMovement();
+		//	CurrentController->Destroy();
+		//	/*UE_LOG(LogTemp, Warning, TEXT("%s controller AI_CHAR"), *CurrentController->GetName());*/
+		//}
 		GetCharacterMovement()->DisableMovement();
+		//DetachFromControllerPendingDestroy();
+		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
+		
 		Mesh3P->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Mesh3P->SetAllBodiesSimulatePhysics(true);
 		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Mesh3P->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_MAX);
+		auto Causer = Cast<AFPS_Charachter>(InstigatedBy->GetCharacter());
+		if (Causer != NULL)
+		{
+			OnDeathNotify.Broadcast(this, Causer);
+			UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+		}
+		HealthComponent->Deactivate();
+		bDropWeaponOnDeath = true;
+		DropWeapon(CurrentWeapon);
+		DetachFromControllerPendingDestroy();
+		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
+
 
 	}
 }

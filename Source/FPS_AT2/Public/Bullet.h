@@ -37,13 +37,13 @@ public:
 
 
 	UFUNCTION(BlueprintCallable)
-		void PlayParticle();
+		void PlayParticle(const FHitResult& Hit);
 	UFUNCTION(BlueprintCallable)
-		void ApplyDecal();
+		void ApplyDecal(const FHitResult& Hit);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = Components)
-		class UParticleSystem* ImpactParticle = nullptr;
+	class UParticleSystem* ImpactParticle = nullptr;
 	UPROPERTY(EditDefaultsOnly, Category = Components)
 	class UParticleSystemComponent* TrailParticleComp = nullptr;
 	UPROPERTY(EditDefaultsOnly, Category = Components)

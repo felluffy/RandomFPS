@@ -34,9 +34,14 @@ public:
 	//void 
 	//void 
 
-	TArray<class ANPC_AI_Controller*> NPCs, RegisterredControllers;
+	TArray<class ANPC_AI_Controller*> RegisterredControllers, NPCs;
+
+	UPROPERTY(BlueprintReadOnly)
+	TArray<class AAI_Character*> AIChars;
 	//Either Activated or not
+
 	TArray<std::pair<class ANPC_AI_Controller*, bool>> RegisterredControllersPair;
+
 	
 
 	void OnToggleInGameMenu();

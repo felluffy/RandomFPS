@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "Perception/AISightTargetInterface.h"
 #include "FPS_Charachter.generated.h"
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeathSignature, AFPS_Charachter*, KilledCharacter, AFPS_Charachter*, KilledByCharacter);
+DECLARE_EVENT_TwoParams(AFPS_Charachter, FOnDeathEventSignature, AFPS_Charachter*, AFPS_Charachter*);
 
 UCLASS()
 class FPS_AT2_API AFPS_Charachter : public ACharacter, public IAISightTargetInterface
@@ -29,6 +31,14 @@ public:
 	class UAudioCaptureComponent* AudioCaptureComponent;
 	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "STT")
 	class USynthComponent* SynthComponent;*/
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnDeathSignature OnDeathNotify;
+	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
+	//void OnKilledCharacter(class AFPS_Charachter* Killed, class AFPS_Charachter* KilledBy);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
+		void OnKilledCharacter2Func(class AFPS_Charachter* Killed, class AFPS_Charachter* KilledBy);
 
 public:
 	// Sets default values for this character's properties
@@ -129,6 +139,8 @@ public:
 		bool IsCrouching = false;
 	UPROPERTY(BlueprintReadWrite, Category = "Gameplay")
 		bool IsAimingDown = false;
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+		float DefaultFieldOfView = 90.0f;
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Player Settings")
 		float DefaultTraceDistance = 1000;
@@ -173,6 +185,8 @@ protected:
 	bool isReloading = false; //should deactivate on a broadcast from weappon 
 	UFUNCTION(BlueprintNativeEvent, Category = "Movement")
 	void OnMovementPlaySound();
+	bool bDropWeaponOnDeath = false;
+	UAnimMontage* ReloadAnimation = NULL; 
 public: 
 	//UPROPERTY(BlueprintCallable, Category = "Weapons")
 	//	AWeaponBase* GetCurrentWeapon() { return CurrentWeapon; }
@@ -203,6 +217,9 @@ public:
 	void OrderCallAssistance();
 	UFUNCTION(BlueprintCallable)
 		void OrderAIGoToLocation(FVector Location, bool FromMap = true);
+	UFUNCTION(BlueprintPure)
+	virtual class AFPS_AT2PlayerController* GetPlayerAFPSController() const; 
+private:
 	class AFPS_AT2PlayerController* PlayerController_AFPS2;
 
 
@@ -223,7 +240,7 @@ public:
 		virtual void OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, float AccuracyScore, FString SentenceRetreived);
 	FString RecognizedWord;
 
-private:
+public:
 	float PlayMontage(class UAnimMontage* MontageToPlay, float InPlayRate, FName StartSectionName);
 	void StopAllMontage();
 
@@ -235,4 +252,17 @@ public:
 		float& OutSightStrength,
 		const AActor* IgnoreActor = NULL
 	) const override;
+
+public:
+	virtual bool IsFirstPerson() const;
+protected:
+	FName EyeSocketName = "headSocket";
+
+	virtual float PlayAnimMontage(class UAnimMontage* AnimMontage, float InPlayRate = 1.f, FName StartSectionName = NAME_None) override;
+public:
+	UFUNCTION(BlueprintCallable, Category = Animation)
+		float PlayAnimMontageOnMesh(class UAnimMontage* AnimMontage, float InPlayRate = 1.f, FName StartSectionName = NAME_None, bool UseFP = false);
+private:
+	class USkeletalMeshComponent* MeshToUse;  
+	
 };

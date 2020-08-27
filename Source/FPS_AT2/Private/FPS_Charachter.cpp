@@ -24,10 +24,21 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/InputSettings.h"
 
+//void AFPS_Charachter::OnKilledCharacter_Implementation(AFPS_Charachter* Killed, AFPS_Charachter* KilledBy)
+//{
+//	//Killed
+//	UE_LOG(LogTemp, Error, TEXT("%s - killed by %s - is owner; %s"), *(Killed->GetName()), *(KilledBy->GetName()), *(this->GetName()));
+//}
+
+void AFPS_Charachter::OnKilledCharacter2Func_Implementation(class AFPS_Charachter* Killed, class AFPS_Charachter* KilledBy)
+{
+	UE_LOG(LogTemp, Error, TEXT("%s - killed by %s - is owner; %s"), *(Killed->GetName()), *(KilledBy->GetName()), *(this->GetName()));
+}
+
 // Sets default values
 AFPS_Charachter::AFPS_Charachter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	GetCapsuleComponent()->InitCapsuleSize(40.f, 96.0f);
 	Mesh3P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh3P"));
@@ -57,19 +68,18 @@ AFPS_Charachter::AFPS_Charachter()
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
 	HealthComp->SetAutoActivate(true);
-	VoiceComponent = CreateDefaultSubobject<UVoiceHttpSTTComponent>(TEXT("VoiceComp"));	
+	VoiceComponent = CreateDefaultSubobject<UVoiceHttpSTTComponent>(TEXT("VoiceComp"));
 	//SynthComponent = CreateDefaultSubobject <USynthComponent>(TEXT("SynthComponent"));
 	AudioCaptureComponent = CreateDefaultSubobject<UAudioCaptureComponent>(TEXT("AudioCaptureComponent"));
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject< UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComponent"));
 	PerceptionStimuliSourceComponent->SetAutoActivate(true);
-
-
+	SetCanAffectNavigationGeneration(true, true);
 
 	MovementComponent = FindComponentByClass<UCharacterMovementComponent>();
 	MovementComponent->MaxWalkSpeedCrouched = 200;
 	DropWeaponMaxDistance = 200.0f;
 	SprintingSpeedModifier = 3.0f;
-}	
+}
 
 // Called when the game starts or when spawned
 void AFPS_Charachter::BeginPlay()
@@ -77,11 +87,21 @@ void AFPS_Charachter::BeginPlay()
 	Super::BeginPlay();
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
 	HealthComp->SetTeam(TeamNumber);
-	
-	if(DefaultWeaponClasses.Num() > 0)
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFPS_Charachter::StaticClass(), FoundActors);
+	for (auto &it : FoundActors)
+	{
+		auto Character = Cast<AFPS_Charachter>(it);
+		if (Character && Character != this)
+			this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
+	}
+	//this->OnDeathNotify.AddDynamic(this, &AFPS_Charachter::OnKilledCharacter);
+
+	if (DefaultWeaponClasses.Num() > 0)
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
 		//SpawnInfo.Owner = this;
 		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0], SpawnInfo);
 		CurrentWeapon->SetOwningPawn(this);
@@ -91,23 +111,24 @@ void AFPS_Charachter::BeginPlay()
 		ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
 
 		//ZoomCameraComponent->Attach
-		
+
 		Inventory.Add(CurrentWeapon);
-		if (DefaultWeaponClasses.Num() > 1)
+		for (int i = 1; i < DefaultWeaponClasses.Num(); i++)
 		{
-			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[1], SpawnInfo));
-			Inventory[1]->SetOwningPawn(this);
+			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[i], SpawnInfo));
+			Inventory[i]->SetOwningPawn(this);
 		}
-			//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
-		//UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon"), *CurrentWeapon->WeaponName.ToString());
-		
+		//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
+	//UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon"), *CurrentWeapon->WeaponName.ToString());
+
 	}
+	DefaultWeaponClasses.Empty();
 
 	auto it = Cast<AFPS_Charachter>(GetOwner());
 	if (it)
-	{	
+	{
 		USkeletalMeshComponent* PawnMesh1p = it->GetMeshComp(false);
-		
+
 		//CurrentWeapon->attacht
 		//Mesh1P->AttachToComponent(PawnMesh1p, FAttachmentTransformRules::KeepRelativeTransform, it->WeaponAttachPoint);
 	}
@@ -119,6 +140,7 @@ void AFPS_Charachter::BeginPlay()
 		VoiceComponent->Activate();
 		//UE_LOG(LogTemp, Warning, TEXT("%s - is the current controller"), *PlayerController_AFPS2->GetName());
 	}
+	ZoomOutFromWeapon();
 }
 
 
@@ -126,7 +148,7 @@ void AFPS_Charachter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
-		if(Value < 0)
+		if (Value < 0)
 			Value /= 1.5;
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
@@ -155,7 +177,7 @@ void AFPS_Charachter::LookUpAtRate(float Rate)
 void AFPS_Charachter::EquipWeapon(AWeaponBase* Weapon)
 {
 
-	if(Weapon && Weapon != CurrentWeapon)
+	if (Weapon && Weapon != CurrentWeapon)
 	{
 		SetCurrentWeapon(CurrentWeapon, Weapon);
 	}
@@ -187,7 +209,7 @@ void AFPS_Charachter::OnDropWeapon()
 
 void AFPS_Charachter::RemoveWeapon(AWeaponBase* Weapon)
 {
-	if(!(Weapon))
+	if (!(Weapon))
 		return;
 	Weapon->Unequip();
 	Inventory.Remove(Weapon);
@@ -232,13 +254,13 @@ void AFPS_Charachter::OnMovementPlaySound_Implementation()
 
 void AFPS_Charachter::NextWeapon()
 {
-	UE_LOG(LogTemp, Warning, TEXT("on Next weapon"));
-	UE_LOG(LogTemp, Warning, TEXT("%d - %d"), Inventory.Num(), DefaultWeaponClasses.Num());
-	if (Inventory.Num() > 1)
-	{
+	if (Inventory.Num() > 1 && !CurrentWeapon->IsReloading())
+	{	
+		if(IsAimingDown)
+			ZoomOutFromWeapon();
 		int32 Index;
 		Inventory.Find(CurrentWeapon, Index);
-			Index = (Index + 1) % Inventory.Num();
+		Index = (Index + 1) % Inventory.Num();
 		UE_LOG(LogTemp, Warning, TEXT("%d CRAZY FUDGE"), Index);
 		EquipWeapon(Inventory[Index]);
 	}
@@ -246,18 +268,20 @@ void AFPS_Charachter::NextWeapon()
 
 void AFPS_Charachter::PreviousWeapon()
 {
-	if (Inventory.Num() > 1)
+	if (Inventory.Num() > 1 && !CurrentWeapon->IsReloading())
 	{
+		if (IsAimingDown)
+			ZoomOutFromWeapon();
 		int32 Index;
 		Inventory.Find(CurrentWeapon, Index);
-			Index = (Index - 1 + Inventory.Num()) % Inventory.Num();
+		Index = (Index - 1 + Inventory.Num()) % Inventory.Num();
 		EquipWeapon(Inventory[Index]);
 	}
 }
 
 bool AFPS_Charachter::CanFire()
 {
-	if(!isReloading)
+	if (!isReloading)
 		return true;
 	return false;
 }
@@ -266,22 +290,22 @@ bool AFPS_Charachter::CanFire()
 void AFPS_Charachter::OrderAIAttack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderAIAttack()"));
-	if(PlayerController_AFPS2)
+	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->OrderAttack(CurrentObjectHit.Location);
 }
 
 void AFPS_Charachter::OrderFollow()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderFollow()"));
-	if(PlayerController_AFPS2)
-	PlayerController_AFPS2->OrderFollow();
+	if (PlayerController_AFPS2)
+		PlayerController_AFPS2->OrderFollow();
 }
 
 void AFPS_Charachter::OrderGuard()
 {
 	FVector Loc = CurrentObjectHit.Location;
 	UE_LOG(LogTemp, Warning, TEXT("OrderGuard()"));
-	if(PlayerController_AFPS2)
+	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->OrderGuard(Loc);
 
 }
@@ -289,16 +313,16 @@ void AFPS_Charachter::OrderGuard()
 void AFPS_Charachter::OrderDismiss()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderDismiss()"));
-	if(PlayerController_AFPS2)
-	PlayerController_AFPS2->OrderDismiss();
+	if (PlayerController_AFPS2)
+		PlayerController_AFPS2->OrderDismiss();
 }
 
 
 void AFPS_Charachter::OrderCallAssistance()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderCallAssistance()"));
-	if(PlayerController_AFPS2)
-	PlayerController_AFPS2->CallAssistance();
+	if (PlayerController_AFPS2)
+		PlayerController_AFPS2->CallAssistance();
 }
 
 void AFPS_Charachter::OrderAIGoToLocation(FVector Location, bool FromMap)
@@ -306,6 +330,11 @@ void AFPS_Charachter::OrderAIGoToLocation(FVector Location, bool FromMap)
 	UE_LOG(LogTemp, Warning, TEXT("OrderAIGoToLocation"))
 		if (PlayerController_AFPS2)
 			PlayerController_AFPS2->CommandMove(Location, FromMap);
+}
+
+class AFPS_AT2PlayerController* AFPS_Charachter::GetPlayerAFPSController() const
+{
+	return PlayerController_AFPS2;
 }
 
 void AFPS_Charachter::StartRecordingAudio_Implementation()
@@ -324,17 +353,17 @@ void AFPS_Charachter::BeginCrouch()
 {
 	//CurrentWeapon->Unequip();
 	IsCrouching = true;
-	if(IsAimingDown)
+	if (IsAimingDown)
 		MovementComponent->MaxWalkSpeed = 150;
 	RecalculateBaseEyeHeight();
 	if (Mesh3P)
 		Mesh3P->RelativeLocation.Z += 44;
-		//Mesh3P->SetRelativeLocation(Get)
+	//Mesh3P->SetRelativeLocation(Get)
 	Crouch();
 }
 
 void AFPS_Charachter::EndCrouch()
-{		
+{
 	//CurrentWeapon->Equip();
 	IsCrouching = false;
 	if (!IsAimingDown)
@@ -366,7 +395,7 @@ void AFPS_Charachter::StartSprinting()
 {
 	if (GetVelocity().IsZero() || FVector::DotProduct(GetVelocity().GetSafeNormal2D(), GetActorRotation().Vector()) < .9f)
 		MovementComponent->MaxWalkSpeed = 300, IsSprinting = false;
-	else 
+	else
 		MovementComponent->MaxWalkSpeed = 700, IsSprinting = true;
 	//IsSprinting = true;
 	bShouldSprint = true;
@@ -388,7 +417,7 @@ void AFPS_Charachter::CommandBot()
 	//Get all bots;
 	//UGameplayStatics::GetAllActorsOfClass(GetWorld)
 	//UGameplayStatics::GetAllActorsOfClas
-	
+
 	if (PlayerController_AFPS2)
 	{
 		//line trace
@@ -404,7 +433,7 @@ void AFPS_Charachter::CommandBot()
 			UE_LOG(LogTemp, Warning, TEXT("ETDTSKKM %f - %f - %f"), fv.X, fv.Y, fv.Z);
 		}
 		UE_LOG(LogTemp, Warning, TEXT("BLYAT"));
-		
+
 		PlayerController_AFPS2->CommandMove(fv, false);
 	}
 }
@@ -469,16 +498,16 @@ void AFPS_Charachter::OnPressedActionButton()
 	FVector LineTraceEnd = LinetraceStart + (NormalRotation * Distance);
 	FVector HalfSize = FVector({ 10.0f });
 	TArray<FHitResult> Hits;
-	UKismetSystemLibrary::BoxTraceMulti(GetWorld(), LinetraceStart, LineTraceEnd, {10,10,10}, { 0,0,0 }, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::None, Hits, true);
+	UKismetSystemLibrary::BoxTraceMulti(GetWorld(), LinetraceStart, LineTraceEnd, { 10,10,10 }, { 0,0,0 }, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::None, Hits, true);
 	for (auto Hit : Hits)
 	{
 		AWeaponBase* Weapon = Cast<AWeaponBase>(Hit.GetActor());
 		if (Weapon)
 		{
 			AddWeaponToInventory(Weapon);
-			UE_LOG(LogTemp, Error, TEXT("Hit some weapon %s"),*(Weapon->WeaponName.ToString()));
+			//UE_LOG(LogTemp, Error, TEXT("Hit some weapon %s"),*(Weapon->WeaponName.ToString()));
 		}
-		UE_LOG(LogTemp, Error, TEXT("Hit some shit"));//, *(Hit.GetActor()->GetName()));
+		//UE_LOG(LogTemp, Error, TEXT("Hit some shit"));//, *(Hit.GetActor()->GetName()));
 	}
 }
 
@@ -486,13 +515,18 @@ void AFPS_Charachter::ZoomInToWeapon()
 {
 	//ZoomCameraComponent->Render;
 	IsAimingDown = true;
-	MovementComponent->MaxWalkSpeed = 250;
+	CurrentWeapon->bZoomed = true;
+	FirstPersonCameraComponent->FieldOfView = FMath::FInterpTo(CurrentWeapon->GetWeaponFov(), DefaultFieldOfView, GetWorld()->GetDeltaSeconds(), .8f);
+	MovementComponent->MaxWalkSpeed = 200;
 
 }
 
 void AFPS_Charachter::ZoomOutFromWeapon()
 {
 	IsAimingDown = false;
+	CurrentWeapon->bZoomed = false;
+	
+	FirstPersonCameraComponent->FieldOfView = FMath::FInterpTo(DefaultFieldOfView, CurrentWeapon->GetWeaponFov(), GetWorld()->GetDeltaSeconds(), .8f);
 	MovementComponent->MaxWalkSpeed = 300;
 }
 
@@ -502,10 +536,10 @@ void AFPS_Charachter::AddWeaponToInventory(AWeaponBase* Weapon)
 		return;
 	for (auto InInventoryWeapon : Inventory)
 	{
-		if (Weapon->WeaponName == InInventoryWeapon->WeaponName)	
+		if (Weapon->WeaponName == InInventoryWeapon->WeaponName)
 			return;
 	}
-	
+
 	Weapon->SetOwningPawn(this);
 	Inventory.AddUnique(Weapon);
 	UE_LOG(LogTemp, Warning, TEXT("%d num weapons"), Inventory.Num());
@@ -534,16 +568,26 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Mesh3P->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_MAX);
 		//DropWeapon(CurrentWeapon);
-
+		//UE_LOG(LogTemp, Warning, TEXT("%s damage causer"), *(DamageCauser->GetName()));
+		auto Causer = Cast<AFPS_Charachter>(InstigatedBy->GetCharacter());
+		if (Causer != NULL)
+		{
+			OnDeathNotify.Broadcast(this, Causer);
+			UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+		}
 		DetachFromControllerPendingDestroy();
-		UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
-		
+		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
+		HealthComponent->Deactivate();
+		bDropWeaponOnDeath = true;
+		DropWeapon(CurrentWeapon);
+
 	}
-	else if(OnDamagedShake != NULL)
+	else if (OnDamagedShake != NULL)
 	{
 		HealthDelta /= HealthComponent->GetMaxHealth();
 		PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnDamagedShake, HealthDelta, ECameraAnimPlaySpace::CameraLocal);
 	}
+
 }
 
 
@@ -590,7 +634,7 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 		FVector socketLocation = Mesh3P->GetSocketLocation(sockets[i]);
 		UE_LOG(LogTemp, Error, TEXT("Socket -Name checked: %s"), *(sockets[i].ToString()));
 		const bool bHitSocket = GetWorld()->LineTraceSingleByObjectType(HitResult, ObserverLocation, socketLocation
-			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic)) 
+			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic))
 			, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));
 
 		NumberOfLoSChecksPerformed++;
@@ -623,6 +667,42 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 	return false;
 }
 
+bool AFPS_Charachter::IsFirstPerson() const
+{
+	return !bInactive && Controller && Controller->IsLocalPlayerController();
+}
+
+float AFPS_Charachter::PlayAnimMontage(class UAnimMontage* AnimMontage, float InPlayRate /*= 1.f*/, FName StartSectionName /*= NAME_None*/)
+{
+	UAnimInstance * AnimInstance = (MeshToUse) ? MeshToUse->GetAnimInstance() : nullptr;
+	if (AnimMontage && AnimInstance)
+	{
+		float const Duration = AnimInstance->Montage_Play(AnimMontage, InPlayRate);
+
+		if (Duration > 0.f)
+		{
+			// Start at a given Section.
+			if (StartSectionName != NAME_None)
+			{
+				AnimInstance->Montage_JumpToSection(StartSectionName, AnimMontage);
+			}
+
+			return Duration;
+		}
+	}
+	MeshToUse = NULL;
+	return 0.f;
+}
+
+float AFPS_Charachter::PlayAnimMontageOnMesh(class UAnimMontage* AnimMontage, float InPlayRate /*= 1.f*/, FName StartSectionName /*= NAME_None*/, bool UseFP /*= false*/)
+{
+	if(UseFP)
+		MeshToUse = Mesh1P;
+	else
+		MeshToUse = Mesh3P;
+	return PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
 //void AFPS_Charachter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 //{
 //	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -648,17 +728,18 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 	if (OnMovmentShake != NULL)
 	{
 		auto CameraShakeScale = (this->GetVelocity().Size()) / 750.0f;
-		if(CameraShakeScale > 0.0f)
+		if (CameraShakeScale > 0.0f)
 			PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnMovmentShake, CameraShakeScale, ECameraAnimPlaySpace::CameraLocal);
 	}
 
 	//LINE TRACE AND STORE Value
-	FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
-	FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
-	FVector LineTraceEnd = LinetraceStart + (NormalRotation * DefaultTraceDistance);
+	FVector LinetraceStart; //= //GetFirstPersonCameraComponent()->GetComponentLocation();
+	FRotator NormalRotation; //=// GetFirstPersonCameraComponent()->GetForwardVector();
+	Mesh3P->GetSocketWorldLocationAndRotation(EyeSocketName, LinetraceStart, NormalRotation);
+	FVector LineTraceEnd = LinetraceStart + (NormalRotation.Vector() * DefaultTraceDistance);
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, LineTraceEnd, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::ForOneFrame, CurrentObjectHit, true);
 
-	
+
 
 	//@TODO: pick up based on what's seen throiugh linetrace from eye to dropped equipment
 
@@ -677,20 +758,20 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 	//	Weapon->OnLeaveInventory();
 	//	Inventory.RemoveSingle(Weapon);
 	//}
-	if (CurrentWeapon)
+	if (CurrentWeapon || bDropWeaponOnDeath)
 	{
 		FVector CameraLocation;
 		FRotator CameraRotation;
 
-		GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
+		//GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
 		FVector SpawnLocation;
-		FRotator SpawnRotation = CameraRotation;
+		/*FRotator SpawnRotation = CameraRotation;*/
 		//line trace on where to drop
 		//const FVector LinetraceStart = GetActorLocation();
 		//const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
 		FVector LinetraceStart = Mesh3P->GetBoneLocation("hand_r");//GetFirstPersonCameraComponent()->GetComponentLocation();
 		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
-		FVector LinetraceEnd = LinetraceStart + (NormalRotation * 100);
+		FVector LinetraceEnd = SpawnLocation  = LinetraceStart + (NormalRotation * 20);
 		//DrawDebugSphere(GetWorld(), LinetraceStart, 30, 8, FColor::Green, true, 5, 0, 2);
 		//DrawDebugSphere(GetWorld(), LinetraceEnd, 30, 8, FColor::Red, true, 5, 0, 2);
 
@@ -698,27 +779,28 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		FCollisionQueryParams CollisionParams;
 		CollisionParams.AddIgnoredActor(this);
 		//CollisionParams.
-		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LinetraceEnd, ECC_WorldDynamic, CollisionParams );
+		GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LinetraceEnd, ECC_WorldDynamic, CollisionParams);
 		//UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, line)
 		if (Hit.bBlockingHit)
 		{
 			SpawnLocation = Hit.ImpactPoint + (Hit.ImpactNormal * 200);
-		//	UE_LOG(LogTemp, Warning, TEXT("614"));
+			//	UE_LOG(LogTemp, Warning, TEXT("614"));
 		}
 		else
 		{
 			SpawnLocation = LinetraceEnd;
-		//	UE_LOG(LogTemp, Warning, TEXT("619"));
+			//	UE_LOG(LogTemp, Warning, TEXT("619"));
 		}
 		//	DrawDebugSphere(GetWorld(), SpawnLocation, 30, 8, FColor::Blue, true, 5, 0, 2);
 		FActorSpawnParameters SpawnParams;
 		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+		
 		NewWeapon->DroppedOnWorld();
 		NewWeapon->SetCurrentAmmo(CurrentWeapon->GetCurrentAmmo(), CurrentWeapon->GetCurrentAmmoInMagazine());
 
 	}
 	Inventory.Remove(CurrentWeapon);
-	if(!bInactive)
+	if (!bInactive)
 		SetCurrentWeapon(CurrentWeapon, Inventory[0]);
 	Weapon->Destroy();
 }

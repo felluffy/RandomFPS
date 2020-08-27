@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "Interfaces/IHttpRequest.h"
 #include "VoiceHttpSTTComponent.generated.h"
-//DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnHealhChangedSignature, UHealthComponent*, HealthComponent, float, Health, float, HealthDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnRecognizedSpeechSignature, UVoiceHttpSTTComponent*, STTComponent, float, AccuracyScore, FString, SentenceRetreived);
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class FPS_AT2_API UVoiceHttpSTTComponent : public UActorComponent

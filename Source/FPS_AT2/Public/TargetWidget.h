@@ -20,13 +20,16 @@ public:
 	float DespawnTimer;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Properties)
 	float FadeInTimer;
+	FTimerHandle FadeInTimerHandle;
+	FTimerHandle FadeOuTimerHandle;
 
 
 
 public:	
 	// Sets default values for this actor's properties
 	ATargetWidget();
-	void FadeOut(float DeltaTime);
+	void FadeOut();
+	void FadeIn();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -34,5 +37,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Properties)
+	float ScaleDownLimit;
 };

@@ -31,8 +31,17 @@ public:
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = DamageSense)
 	bool IsDamagedWithinSeconds;
-	UPROPERTY(BlueprintReadWrite, Category = "Sockets")
-	FName EyeSocketName = "headSocket";
+
 
 	void RotateHeadOnGuard();
+private:
+	class ANPC_AI_Controller* AAI_Controller;
+public:
+	void SetAAIController(class ANPC_AI_Controller* ToSet)
+	{
+		if(AAI_Controller == nullptr)
+			AAI_Controller = ToSet;
+	}
+	class ANPC_AI_Controller* GetAAIController() { return AAI_Controller; }
+	//class ANPC_AI_Controller GetController()
 };

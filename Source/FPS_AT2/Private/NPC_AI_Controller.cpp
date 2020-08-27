@@ -35,7 +35,7 @@ void ANPC_AI_Controller::UpdateControlRotation(float DeltaTime, bool bUpdatePawn
 		if (FAISystem::IsValidLocation(FocalPoint))
 		{
 			NewControlRotation = (FocalPoint - MyPawn->GetPawnViewLocation()).Rotation();
-			NewControlRotation.Pitch += 10;
+			//NewControlRotation.Pitch += 10;
 		}
 		else if (bSetControlRotationFromPawnOrientation)
 		{
@@ -95,10 +95,47 @@ void ANPC_AI_Controller::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	AAI_Character* NPC = Cast<AAI_Character>(InPawn);
+	if (NPC)
+	{
+		NPC->SetAAIController(this);
+		
+	}
 	//if(NPC && NPC->BotBehavior)
 	//{
 	//	if(NPC->BotBehavior->BlackboardAsset)
 	//}	
+}
+
+void ANPC_AI_Controller::ReOrderByDistance(TArray<AActor*> Actors, bool OrderByLower /*= true*/)
+{
+	if(!OwningPawn)
+		return;
+	auto AI_Location = OwningPawn->GetActorLocation();
+
+	for (int i = 1; i < Actors.Num(); i++)
+	{
+		auto CurrentActor = Actors[i];
+		auto CurrentDistance = (CurrentActor->GetActorLocation() - AI_Location).Size();
+		int j = i - 1;
+		//auto GetCurrent
+		if(OrderByLower)
+		{
+			while (j >= 0 && (Actors[j]->GetActorLocation() - AI_Location).Size() > CurrentDistance)
+			{
+				Actors[j + 1] = Actors[j];
+				j--;
+			}
+		}
+		else
+		{
+			while (j >= 0 && (Actors[j]->GetActorLocation() - AI_Location).Size() < CurrentDistance)
+			{
+				Actors[j + 1] = Actors[j];
+				j--;
+			}
+		}
+		Actors[j+1] =  CurrentActor;
+	}
 }
 
 bool ANPC_AI_Controller::ShouldCrouchBehindCover()
