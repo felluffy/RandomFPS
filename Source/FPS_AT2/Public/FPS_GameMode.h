@@ -22,17 +22,26 @@ public:
 
 	class ANPC_AI_Controller* CreateBot(int32 BotNum);
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite, Category = "Gameplay")
 		TArray<class ANPC_AI_Controller*> BotControllers;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite, Category = "Gameplay")
 		class AFPS_Charachter* Spawned_Character;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gameplay")
+		float TimeToReset;
 
 	UFUNCTION()
 		void DestroyActorFunction();
 	//virtual void StartMatch();
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ResetGame(float TimeToRest);
+
+
+
 public:
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	void CreateBotControllers();
 	uint8 ExistingBots = 0;
 };

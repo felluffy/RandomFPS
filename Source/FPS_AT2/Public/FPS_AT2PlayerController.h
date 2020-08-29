@@ -41,11 +41,14 @@ public:
 	//Either Activated or not
 
 	TArray<std::pair<class ANPC_AI_Controller*, bool>> RegisterredControllersPair;
-
+	UPROPERTY(BlueprintReadOnly, Category = AI)
+	TArray<bool> Listening;
 	
-
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Menus")
 	void OnToggleInGameMenu();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Menus")
 	void OnToggleScoreBoard();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Menus")
 	void OnHideScoreBoard();
 	void Test();
 

@@ -138,6 +138,19 @@ void ANPC_AI_Controller::ReOrderByDistance(TArray<AActor*> Actors, bool OrderByL
 	}
 }
 
+int32 ANPC_AI_Controller::GetMaxInt(TArray<int32> Array)
+{
+	int32 max = INT_MIN;
+	for (auto it : Array)
+	{
+		if (max < it)
+		{
+			max = it;
+		}
+	}
+	return max;
+}
+
 bool ANPC_AI_Controller::ShouldCrouchBehindCover()
 {
 	//get hit from pawn, and a line trace from midddle of body to front, !blocked1 and blocked2

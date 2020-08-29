@@ -66,21 +66,20 @@ void AFPS_AT2PlayerController::RegisterBot(int index)
 		RegisterredControllers.Remove(NPCs[index]);
 	else
 		RegisterredControllers.Add(NPCs[index]);*/
-	if (RegisterredControllersPair.Num() < 1 || !RegisterredControllersPair.IsValidIndex(index))
+
+	if (RegisterredControllersPair.Num() < 1 || !RegisterredControllersPair.IsValidIndex(index) || RegisterredControllersPair[index].first == NULL)
 		return;
 	if (RegisterredControllersPair[index].second == true)
-		RegisterredControllersPair[index].second = false, RegisteredBotsNum--;
+		RegisterredControllersPair[index].second = false, RegisteredBotsNum--, Listening[index] = false;
 	else
-		RegisterredControllersPair[index].second = true, RegisteredBotsNum++;
+		RegisterredControllersPair[index].second = true, RegisteredBotsNum++, Listening[index] = true;
 	bool res = RegisterredControllersPair[index].second;
 	FString resString;
 	if (res)
 		resString = "True";
 	else
-		resString = "False";
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Controller registered INDEX: %d, on bool: %s"), index, *resString));
-		
-	UE_LOG(LogTemp, Error, TEXT("Controller registered INDEX: %d, on bool: %s"), index, *resString);
+		resString = "False";	
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Controller registered INDEX: %d, on bool: %s, registerred bots: %d"), index, *resString, RegisteredBotsNum));
 }
 
 
@@ -166,6 +165,22 @@ void AFPS_AT2PlayerController::OrderFollow_Implementation()
 				continue;
 			else
 			{
+				//RandomPoint in navmesh if possible
+				UNavigationSystemV1* navSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+				if (navSystem)
+				{
+					ANavigationData* navData = navSystem->GetNavDataForProps(GetNavAgentPropertiesRef());
+					TSubclassOf<UNavigationQueryFilter> filterClass = URecastFilter_UseDefaultArea::StaticClass();
+					if (!filterClass || !navData)
+						break;
+					auto SQF = UNavigationQueryFilter::GetQueryFilter(*navData, filterClass);
+					FNavLocation ResultLocation;
+					if (navSystem->GetRandomReachablePointInRadius(PlayerLocation, 100, ResultLocation, navData, SQF))
+					{
+						PlayerLocation = ResultLocation.Location;
+					}
+				}
+
 				RegisterredControllersPair[i].first->TargetPoint = PlayerLocation;
 				RegisterredControllersPair[i].first->IsPlayerCommanded = true;
 				RegisterredControllersPair[i].first->AcceptableRadius = AcceptanceRadius;
@@ -178,28 +193,33 @@ void AFPS_AT2PlayerController::OrderFollow_Implementation()
 void AFPS_AT2PlayerController::OrderGuard_Implementation(FVector &Location)
 {
 	UNavigationSystemV1* navSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-	ANavigationData* navData = navSystem->GetNavDataForProps(GetNavAgentPropertiesRef());
-	TSubclassOf<UNavigationQueryFilter> filterClass = URecastFilter_UseDefaultArea::StaticClass();
-	auto SQF = UNavigationQueryFilter::GetQueryFilter(*navData, filterClass);
-	//bool navResult = navSystem->ProjectPointToNavigation(HitResult.Location, NavLocation, TeleportFadeTimeExtent);
-	for (int i = 0; i != RegisterredControllersPair.Num(); i++)
+	if(navSystem)
 	{
-		if (!RegisterredControllersPair[i].second)
-			continue;
-		if (RegisterredControllersPair[i].first->bHasLOSToEnemy == false)
+		ANavigationData* navData = navSystem->GetNavDataForProps(GetNavAgentPropertiesRef());
+		TSubclassOf<UNavigationQueryFilter> filterClass = URecastFilter_UseDefaultArea::StaticClass();
+		if(!filterClass || !navData)
+			return;
+		auto SQF = UNavigationQueryFilter::GetQueryFilter(*navData, filterClass);
+		//bool navResult = navSystem->ProjectPointToNavigation(HitResult.Location, NavLocation, TeleportFadeTimeExtent);
+		for (int i = 0; i != RegisterredControllersPair.Num(); i++)
 		{
-			//bool navResult = navSystem->ProjectPointToNavigation(RegisterredControllersPair[i].first->GetPawn()->GetActorLocation(), Location, FVector::ZeroVector, navData, filterClass);
-			const FNavAgentProperties& AgentProps = GetNavAgentPropertiesRef();
-			FNavLocation outLocation;
-			auto Loc = Location;
-			FVector ZV = FVector::ZeroVector;
-			bool navResult = navSystem->ProjectPointToNavigation(Loc, outLocation, ZV, navData, SQF);// , filterClass);
-			//UE_LOG(LogTemp, Error, TEXT("%d - casted point to navigation plane"), navResult);
-			if (navResult)
+			if (!RegisterredControllersPair[i].second)
+				continue;
+			if (RegisterredControllersPair[i].first->bHasLOSToEnemy == false)
 			{
-				RegisterredControllersPair[i].first->bShouldGuard = true;
-				RegisterredControllersPair[i].first->TargetPoint = Location;
-				RegisterredControllersPair[i].first->IsPlayerCommanded = true;
+			//bool navResult = navSystem->ProjectPointToNavigation(RegisterredControllersPair[i].first->GetPawn()->GetActorLocation(), Location, FVector::ZeroVector, navData, filterClass);
+				const FNavAgentProperties& AgentProps = GetNavAgentPropertiesRef();
+				FNavLocation outLocation;
+				auto Loc = Location;
+				FVector ZV = FVector::ZeroVector;
+				bool navResult = navSystem->ProjectPointToNavigation(Loc, outLocation, ZV, navData, SQF);// , filterClass);
+				//UE_LOG(LogTemp, Error, TEXT("%d - casted point to navigation plane"), navResult);
+				if (navResult)
+				{
+					RegisterredControllersPair[i].first->bShouldGuard = true;
+					RegisterredControllersPair[i].first->TargetPoint = Location;
+					RegisterredControllersPair[i].first->IsPlayerCommanded = true;
+				}
 			}
 		}
 	}
@@ -289,20 +309,22 @@ void AFPS_AT2PlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 	InputComponent->BindAction("InGameMenu", IE_Pressed, this, &AFPS_AT2PlayerController::OnToggleInGameMenu);
+	InputComponent->BindAction("ShowScores", IE_Pressed, this, &AFPS_AT2PlayerController::OnToggleScoreBoard);
+	InputComponent->BindAction("ShowScores", IE_Released, this, &AFPS_AT2PlayerController::OnHideScoreBoard);
 	//InputComponent->BindAction("Com")
 }
 
-void AFPS_AT2PlayerController::OnToggleInGameMenu()
+void AFPS_AT2PlayerController::OnToggleInGameMenu_Implementation()
 {
 
 }
 
-void AFPS_AT2PlayerController::OnToggleScoreBoard()
+void AFPS_AT2PlayerController::OnToggleScoreBoard_Implementation()
 {
 
 }
 
-void AFPS_AT2PlayerController::OnHideScoreBoard()
+void AFPS_AT2PlayerController::OnHideScoreBoard_Implementation()
 {
 
 }

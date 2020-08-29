@@ -13,9 +13,11 @@ UCLASS()
 class FPS_AT2_API AAI_Character : public AFPS_Charachter
 {
 	GENERATED_BODY()
-
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-		class UPatrolComponent* PatrolComp;
+		class UPatrolComponent* PatrolComp;	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = Default)
+		class UBoxComponent* AreaContextBox;
 
 protected:
 	virtual void BeginPlay() override;

@@ -18,6 +18,7 @@ AAI_Character::AAI_Character()
 	bUseControllerRotationYaw = true;
 	PatrolComp = CreateDefaultSubobject<UPatrolComponent>(TEXT("Patrol Component"));
 	VoiceComponent->Deactivate();
+	AreaContextBox = CreateDefaultSubobject<UBoxComponent>(TEXT("AreaContextBox"));
 	//FirstPersonCameraComponent->Deactivate();	
 
 }
@@ -79,7 +80,7 @@ void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Hea
 		if (Causer != NULL)
 		{
 			OnDeathNotify.Broadcast(this, Causer);
-			UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+			//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
 		}
 		HealthComponent->Deactivate();
 		bDropWeaponOnDeath = true;

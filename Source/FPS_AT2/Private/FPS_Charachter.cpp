@@ -261,7 +261,6 @@ void AFPS_Charachter::NextWeapon()
 		int32 Index;
 		Inventory.Find(CurrentWeapon, Index);
 		Index = (Index + 1) % Inventory.Num();
-		UE_LOG(LogTemp, Warning, TEXT("%d CRAZY FUDGE"), Index);
 		EquipWeapon(Inventory[Index]);
 	}
 }
@@ -443,6 +442,7 @@ void AFPS_Charachter::CommandBot_1()
 	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
 	if (PlayerController_AFPS2)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("RegisterBot calling: 0"));
 		PlayerController_AFPS2->RegisterBot(0);
 	}
 	//if (PlayerController_AFPS2)
@@ -469,6 +469,7 @@ void AFPS_Charachter::CommandBot_2()
 	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
 	if (PlayerController_AFPS2)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("RegisterBot calling: 1"));
 		PlayerController_AFPS2->RegisterBot(1);
 	}
 
@@ -478,6 +479,7 @@ void AFPS_Charachter::CommandBot_3()
 	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
 	if (PlayerController_AFPS2)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("RegisterBot calling: 2"));
 		PlayerController_AFPS2->RegisterBot(2);
 	}
 }
@@ -486,6 +488,7 @@ void AFPS_Charachter::CommandBot_4()
 	//AFPS_AT2PlayerController* PlayerController = Cast<AFPS_AT2PlayerController>(GetController());
 	if (PlayerController_AFPS2)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("RegisterBot calling: 3"));
 		PlayerController_AFPS2->RegisterBot(3);
 	}
 }
@@ -593,13 +596,18 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 
 void AFPS_Charachter::OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, float AccuracyScore, FString SentenceRetreived)
 {
+	//@TODO Bad approach, change later to something quicker
 	RecognizedWord = SentenceRetreived.ToLower();
-	if (RecognizedWord.Contains("follow"))
+	if (RecognizedWord.Contains("follow") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("come with") || RecognizedWord.Contains("stick to") || RecognizedWord.Contains("stick with") || RecognizedWord.Contains("walk behind") || RecognizedWord.Contains("cover me") || RecognizedWord.Contains("protect me") || RecognizedWord.Contains("on me"))
 		this->OrderFollow();
-	else if (RecognizedWord.Contains("defend"))
+	else if (RecognizedWord.Contains("defend") || RecognizedWord.Contains("guard") || RecognizedWord.Contains("cover") || RecognizedWord.Contains("safeguard") || RecognizedWord.Contains("patrol") || RecognizedWord.Contains("protect") || RecognizedWord.Contains("shield") || RecognizedWord.Contains("hold"))
 		this->OrderGuard();
-
-
+	else if (RecognizedWord.Contains("charge") || RecognizedWord.Contains("attack") || RecognizedWord.Contains("strike") || RecognizedWord.Contains("rush") || RecognizedWord.Contains("storm") || RecognizedWord.Contains("ambush") || RecognizedWord.Contains("assault"))
+		this->OrderAIAttack();
+	else if(RecognizedWord.Contains("assistance") || RecognizedWord.Contains("help") || RecognizedWord.Contains("support"))// || RecognizedWord.Contains("get behind") ||  RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind"))
+		this->OrderCallAssistance();
+	else if(RecognizedWord.Contains("dismiss") || RecognizedWord.Contains("as you were") || RecognizedWord.Contains("get back"))
+		this->OrderDismiss();
 }
 
 float AFPS_Charachter::PlayMontage(class UAnimMontage* MontageToPlay, float InPlayRate, FName StartSectionName)
@@ -701,6 +709,11 @@ float AFPS_Charachter::PlayAnimMontageOnMesh(class UAnimMontage* AnimMontage, fl
 	else
 		MeshToUse = Mesh3P;
 	return PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
+void AFPS_Charachter::RemoveAllWidgetsFromViewPort_Implementation()
+{
+	
 }
 
 //void AFPS_Charachter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -264,5 +264,9 @@ public:
 		float PlayAnimMontageOnMesh(class UAnimMontage* AnimMontage, float InPlayRate = 1.f, FName StartSectionName = NAME_None, bool UseFP = false);
 private:
 	class USkeletalMeshComponent* MeshToUse;  
+
+public:
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Widgets")
+	void RemoveAllWidgetsFromViewPort();
 	
 };

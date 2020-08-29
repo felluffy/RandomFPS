@@ -48,7 +48,8 @@ public:
 	virtual void OnPossess(class APawn* InPawn) override;
 	UFUNCTION(BlueprintCallable, Category = "Algorithms")
 	void ReOrderByDistance(TArray<AActor*> Actors, bool OrderByLower = true);
-
+	UFUNCTION(BlueprintCallable, Category = "Algorithms")
+	int32 GetMaxInt(TArray<int32> IntArray);
 
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")

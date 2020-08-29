@@ -17,6 +17,7 @@ AFPS_GameMode::AFPS_GameMode()
 {
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Blueprints/FPS_CharachterBP"));
+	//static ConstructorHelpers::FClassFinder<AController> ControllerClassFinder(TEXT("/Game/Blueprints/"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 	/*static ConstructorHelpers::FClassFinder<APawn> BotPawnOb(TEXT("/Game/Blueprints/AI/AI_Bot"));
 	BotPawnClass = BotPawnOb.Class;*/
@@ -46,11 +47,28 @@ void AFPS_GameMode::DestroyActorFunction()
 	}
 }
 
+void AFPS_GameMode::ResetGame_Implementation(float TimeToRest)
+{
+
+}
+
 void AFPS_GameMode::CreateBotControllers()
 {
 	UWorld* World = GetWorld();
 	AFPS_AT2PlayerController* const PlayerController_1 = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 0));
 	AFPS_AT2PlayerController* const PlayerController_2 = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 1));
+	AFPS_Charachter* TeamALeader = NULL;
+	AFPS_Charachter* TeamBLeader = NULL;
+	if (PlayerController_1)
+	{
+		TeamALeader = Cast<AFPS_Charachter>(PlayerController_1->GetPawn());
+		PlayerController_1->RegisterredControllersPair.Empty();
+	}
+	if (PlayerController_2)
+	{
+		TeamBLeader = Cast<AFPS_Charachter>(PlayerController_2->GetPawn());
+		PlayerController_2->RegisterredControllersPair.Empty();
+	}
 	
 	for (auto it = World->GetControllerIterator(); it; it++)
 	{
@@ -59,18 +77,7 @@ void AFPS_GameMode::CreateBotControllers()
 		{
 			//CreateBot()
 			AFPS_Charachter* OwnedCharachter = Cast<AFPS_Charachter>(AIC->GetPawn());
-			AFPS_Charachter* TeamALeader = NULL;
-			AFPS_Charachter* TeamBLeader = NULL;
-			if(PlayerController_1)
-			{
-				TeamALeader =  Cast<AFPS_Charachter>(PlayerController_1->GetPawn());
-				PlayerController_1->RegisterredControllersPair.Empty();
-			}
-			if(PlayerController_2)
-			{
-				TeamBLeader =  Cast<AFPS_Charachter>(PlayerController_2->GetPawn());
-				PlayerController_2->RegisterredControllersPair.Empty();
-			}
+			
 			ExistingBots++;
 			if (OwnedCharachter && PlayerController_1)
 			{
@@ -81,12 +88,14 @@ void AFPS_GameMode::CreateBotControllers()
 					if(Ai)
 						PlayerController_1->AIChars.Add(Ai);
 					PlayerController_1->RegisterredControllersPair.Add(std::make_pair(AIC, false));
+					PlayerController_1->Listening.Add(false);
 				}
 				else if (TeamBLeader != NULL && OwnedCharachter->TeamNumber == TeamBLeader->TeamNumber)
 				{
 					if (Ai)
 						PlayerController_2->AIChars.Add(Ai);
 					PlayerController_2->RegisterredControllersPair.Add(std::make_pair(AIC, false));
+					PlayerController_2->Listening.Add(false);
 				}
 			}
 		}

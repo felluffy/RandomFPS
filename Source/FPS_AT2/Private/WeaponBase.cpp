@@ -212,7 +212,7 @@ void AWeaponBase::OnFire()
 							SpreadAdjustment = RS.VRandCone(Cast<AFPS_Charachter>(GetOwner())->GetFirstPersonCameraComponent()->GetForwardVector(), Spread * VectorSize / 10, Spread * VectorSize / 10);
 					
 					}
-					SpawnRotation = SpreadAdjustment.ToOrientationRotator();
+					SpawnRotation = UKismetMathLibrary::MakeRotFromX(SpreadAdjustment);
 					//SpawnRotation = SpreadAdjustment.ToOrientationRotator();
 					/*if (AI_Bot)
 						SpreadAdjustment += {.1, .1, .1};*/
@@ -228,7 +228,7 @@ void AWeaponBase::OnFire()
 					//if (IsFirstPerson)
 					{
 						// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-						SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+						SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation());// + SpawnRotation.RotateVector(GunOffset);
 					}
 					//DrawDebugSphere(GetWorld(), FP_MuzzleLocation->GetComponentLocation(), 10, 2, FColor::Yellow, false, 3, 0, 5);
 					//else 
