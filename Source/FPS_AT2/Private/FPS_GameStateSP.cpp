@@ -22,5 +22,26 @@ void AFPS_GameStateSP::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &Out
 
 	DOREPLIFETIME(AFPS_GameStateSP, TeamAScore);
 	DOREPLIFETIME(AFPS_GameStateSP, TeamBScore);
+
+	DOREPLIFETIME(AFPS_GameStateSP, bIsGameOver);
+	DOREPLIFETIME(AFPS_GameStateSP, bReadyToStart);
+
+	DOREPLIFETIME(AFPS_GameStateSP, RoundTimesInSeconds);
+	DOREPLIFETIME(AFPS_GameStateSP, TimeElapsedSinceGameStart);
+}
+
+void AFPS_GameStateSP::OnStartMatch_Implementation()
+{
+
+}
+
+void AFPS_GameStateSP::UpdateMatchTime_Implementation()
+{
+
+}
+
+void AFPS_GameStateSP::StartMatch_Implementation()
+{
+
 }
 

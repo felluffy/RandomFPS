@@ -578,11 +578,13 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 			OnDeathNotify.Broadcast(this, Causer);
 			UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
 		}
-		DetachFromControllerPendingDestroy();
 		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
 		HealthComponent->Deactivate();
 		bDropWeaponOnDeath = true;
 		DropWeapon(CurrentWeapon);
+		//Mesh3P->SetAnimationMode(0);
+		//Mesh1P->SetAnimationMode(EAnimationMode::Type::);
+		DetachFromControllerPendingDestroy();
 
 	}
 	else if (OnDamagedShake != NULL)
@@ -663,7 +665,7 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 
 	if (bHit == false || (HitResult.Actor.IsValid() && HitResult.Actor->IsOwnedBy(this)))
 	{
-		UE_LOG(LogTemp, Error, TEXT("true"));
+		//UE_LOG(LogTemp, Error, TEXT("true"));
 		OutSeenLocation = GetActorLocation();
 		OutSightStrength = 1;
 
@@ -711,6 +713,46 @@ float AFPS_Charachter::PlayAnimMontageOnMesh(class UAnimMontage* AnimMontage, fl
 	return PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
+void AFPS_Charachter::SlideCharacter()
+{
+	if (!bIsSliding && GetVelocity().Size() > 500)
+	{
+		bIsSliding = true;
+		GetWorldTimerManager().SetTimer(SlideTimerHandle, this, &AFPS_Charachter::StopSliding, SlideTime, false);
+		
+		MovementComponent->AddImpulse(GetFirstPersonCameraComponent()->GetForwardVector() * 500);
+		if (SlideAnimation != NULL)
+		{
+			//Play slide animations and change slide time to the anim's runtime;
+		}
+	}
+}
+
+void AFPS_Charachter::StopSliding()
+{	
+	if (bIsSliding)
+	{
+		while(GetVelocity().Size() > 600);
+		bIsSliding = false;
+	}
+}
+
+
+void AFPS_Charachter::PossessedBy(AController* NewController)
+{
+	if (NewController != NULL)
+	{
+		//AFPS_AT2PlayerController ToSetController = Cast<AFPS_AT2PlayerController>(NewController);
+		this->Controller = NewController;
+		this->PlayerController_AFPS2 = Cast<AFPS_AT2PlayerController>(NewController);
+	}
+}
+
+void AFPS_Charachter::UnPossessed()
+{
+
+}
+
 void AFPS_Charachter::RemoveAllWidgetsFromViewPort_Implementation()
 {
 	
@@ -741,7 +783,7 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 	if (OnMovmentShake != NULL)
 	{
 		auto CameraShakeScale = (this->GetVelocity().Size()) / 750.0f;
-		if (CameraShakeScale > 0.0f)
+		if (CameraShakeScale > 0.0f && PlayerController_AFPS2)
 			PlayerController_AFPS2->PlayerCameraManager->PlayCameraShake(OnMovmentShake, CameraShakeScale, ECameraAnimPlaySpace::CameraLocal);
 	}
 
@@ -851,6 +893,7 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("AudioCapture", IE_Released, this, &AFPS_Charachter::StopRecordingAudio_Implementation);
 	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &AFPS_Charachter::ZoomInToWeapon);
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &AFPS_Charachter::ZoomOutFromWeapon);
+	PlayerInputComponent->BindAction("Slide", IE_Pressed, this, &AFPS_Charachter::SlideCharacter);
 
 	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);

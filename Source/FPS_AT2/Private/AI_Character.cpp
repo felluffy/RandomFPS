@@ -85,6 +85,8 @@ void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Hea
 		HealthComponent->Deactivate();
 		bDropWeaponOnDeath = true;
 		DropWeapon(CurrentWeapon);
+		//Mesh3P->SetAnimationMode(NULL);
+		//Mesh1P->SetAnimationMode(NULL);
 		DetachFromControllerPendingDestroy();
 		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
 

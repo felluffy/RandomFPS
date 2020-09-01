@@ -22,6 +22,8 @@ class FPS_AT2_API AFPS_AT2PlayerController : public APlayerController
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	UPROPERTY(BlueprintReadWrite)
+	uint8 TeamNumber;
 public:
 	virtual void SetupInputComponent() override;
 

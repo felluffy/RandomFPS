@@ -21,7 +21,7 @@ struct FWeaponAnim
 {
 	GENERATED_USTRUCT_BODY()
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Animation)
-		class UAnimMontage* Pawn1P;
+		class UAnimMontage	* Pawn1P;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Animation)
 		class UAnimMontage* Pawn3P;
 };

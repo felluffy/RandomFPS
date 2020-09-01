@@ -208,7 +208,7 @@ protected:
 	TSubclassOf<class AAI_Character> TeamClasses;
 
 public:
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Multiplayer")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multiplayer")
 		uint8 TeamNumber = 0;
 	void OrderAIAttack();
 	void OrderFollow();
@@ -268,5 +268,29 @@ private:
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Widgets")
 	void RemoveAllWidgetsFromViewPort();
+
+private:
+	void SlideCharacter();
+	void StopSliding();
+	FTimerHandle SlideTimerHandle;
 	
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	class UAnimMontage* SlideAnimation;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+		float SlideTime;
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsSliding;
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	float WalkSpeed;
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	float RunSpeed;
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	float CrouchSpeed;
+	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	float SlideSpeed;
+public:
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
 };

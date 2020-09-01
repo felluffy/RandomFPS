@@ -47,7 +47,31 @@ void AFPS_GameMode::DestroyActorFunction()
 	}
 }
 
+void AFPS_GameMode::SetTeamScores_Implementation()
+{
+
+}
+
+void AFPS_GameMode::SpawnCharacterWithClass_Implementation(class APlayerController* Controller)
+{
+
+}
+//bool AFPS_GameMode::SpawnCharacterWithClass_Validate(class APlayerController* Controller)
+//{
+//	return true;
+//}
+
+void AFPS_GameMode::SpawnPlayers_Implementation()
+{
+
+}
+
 void AFPS_GameMode::ResetGame_Implementation(float TimeToRest)
+{
+
+}
+
+void AFPS_GameMode::SpawnBots_Implementation()
 {
 
 }
