@@ -30,6 +30,9 @@ public:
 	virtual void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser) override;
 	virtual void GetActorEyesViewPoint(FVector& Location, FRotator& Rotation) const override;
 	void GetPerceptionLocationAndRotation(FVector& Location, FRotator& Rotation) const;
+
+	UPROPERTY(BlueprintReadWrite, Category = "AI")
+	TArray<class ANPC_AI_Controller*> TeamMembers;
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = DamageSense)
 	bool IsDamagedWithinSeconds;

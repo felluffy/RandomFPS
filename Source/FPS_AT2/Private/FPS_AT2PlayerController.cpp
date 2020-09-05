@@ -7,6 +7,8 @@
 #include "NavigationSystem.h"
 #include "NavFilters/RecastFilter_UseDefaultArea.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include <vector>
 #include <algorithm>
 #include "EngineGlobals.h"
@@ -83,6 +85,33 @@ void AFPS_AT2PlayerController::RegisterBot(int index)
 }
 
 
+void AFPS_AT2PlayerController::ShowEndGameOrNextRoundScreen1_Implementation(class UUserWidget* WidgetToShow, bool EndGame = false)
+{
+	if (WidgetToShow != nullptr)
+	{
+		WidgetToShow->AddToViewport();
+		if (EndGame)
+		{
+			
+			FInputModeGameAndUI InputMode;
+			InputMode.SetHideCursorDuringCapture(false);
+			InputMode.SetWidgetToFocus(WidgetToShow->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+			SetInputMode(InputMode);
+
+			bShowMouseCursor = true;
+			bEnableClickEvents = true;
+			bEnableMouseOverEvents = true;
+		}
+	}
+}
+
+void AFPS_AT2PlayerController::ShowPlayerSelectionOnStartUp_Implementation()
+{
+
+}
+
 void AFPS_AT2PlayerController::Test()
 {
 	//for (int i = 0; i != RegisterredControllers.Num(); i++)
@@ -91,6 +120,27 @@ void AFPS_AT2PlayerController::Test()
 	}
 	//UE_LOG(LogTemp, Error, TEXT("%d reporting"), RegisterredControllers.Num());
 
+}
+
+void AFPS_AT2PlayerController::OnPossess(APawn* aPawn)
+{
+	if (this != nullptr && this->PlayerCameraManager != nullptr)
+		this->PlayerCameraManager->StopAllCameraShakes(true);
+
+	Super::OnPossess(aPawn);
+	auto FPS_Char = Cast<AFPS_Charachter>(aPawn);
+	if(FPS_Char)
+	{
+		ShowHud();
+	}
+}
+
+void AFPS_AT2PlayerController::OnUnPossess()
+{
+	if (this != nullptr && this->PlayerCameraManager != nullptr)
+		this->PlayerCameraManager->StopAllCameraShakes(true);
+	Super::OnUnPossess();
+	DisableHud();
 }
 
 uint8 AFPS_AT2PlayerController::RegisteredNumberOfBots()
@@ -304,6 +354,42 @@ void AFPS_AT2PlayerController::AttackTargettedEnenmy(AFPS_Charachter* EnemyChar)
 	}
 }
 
+///On Session leave
+void AFPS_AT2PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("OnDestroySessionComplete %s, %d"), *SessionName.ToString(), bWasSuccessful));
+
+	//// Get the OnlineSubsystem we want to work with
+	//IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	//if (OnlineSub)
+	//{
+	//	// Get the SessionInterface from the OnlineSubsystem
+	//	IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
+
+	//	if (Sessions.IsValid())
+	//	{
+	//		// Clear the Delegate
+	//		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteDelegateHandle);
+
+	//		// If it was successful, we just load another level (could be a MainMenu!)
+	//		if (bWasSuccessful)
+	//		{
+	//			UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonExampleMap", true);
+	//		}
+	//	}
+	//}
+}
+
+void AFPS_AT2PlayerController::DisableHud()
+{
+	ShowHudDelegate.Broadcast(this, false);
+}
+
+void AFPS_AT2PlayerController::ShowHud()
+{
+	ShowHudDelegate.Broadcast(this, true);
+}
 
 void AFPS_AT2PlayerController::SetupInputComponent()
 {

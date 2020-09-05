@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/StaticMeshComponent.h" 	
 #include "ExplosiveItems.generated.h"
 
 UCLASS()
@@ -18,13 +19,14 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	UPROPERTY(EditDefaultsOnly)
+	float Lifespan = 2.0f;
 
 public:
 	// Called every frame
 	//virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-		class UStaticMeshComponent* MeshEx;
+
 	/*UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	class USphereComponent* Sphere;*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -33,6 +35,12 @@ public:
 		class URadialForceComponent* RadialForceComp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Particles)
 		class UParticleSystem* ExplosionParticle;
+	UPROPERTY(EditDefaultsOnly, Category = "Shakes")
+		TSubclassOf<class UCameraShake> OnDamagedShake;
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	UStaticMeshComponent* MeshEx_2;
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	 class USceneComponent* sc;
 
 	virtual	void Explode();
 
@@ -40,15 +48,22 @@ public:
 	void OnHealthChanged(class UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
 
-private:
+	public:
 	FTimerHandle ExplosionTimerHandle;
 	float DestroyComponenetDelay;
 	bool bIsDestroyed = false;
-	UPROPERTY(VisibleDefaultsOnly, Category = Misc)
+	UPROPERTY(EditDefaultsOnly, Category = Misc)
 		float ExplosionRadius;
-	UPROPERTY(VisibleDefaultsOnly, Category = Misc)
+	UPROPERTY(EditDefaultsOnly, Category = Misc)
 		float Damage;
-
+	UPROPERTY(EditDefaultsOnly, Transient)
+		class USoundBase* ExplosionSound;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float ExplosionSoundScale = .2f;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
+		float ExplosionSoundRange = 2000.0f;
+	UPROPERTY(EditDefaultsOnly, Transient)
+		class USoundAttenuation* ExplosionAttenuation;
 	//@TODO Move out later
 public:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISenses)

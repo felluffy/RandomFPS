@@ -13,6 +13,7 @@
 
 //DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(CallAssistance, UHealthComponent*, HealthComponent, float, Health, float, HealthDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
 //DECLARE_DYNAMIC_MULTICAST_DELEGATE(CallAssistace)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FShowHudDelegate, AFPS_AT2PlayerController*, FPSController, bool, Show);
 
 UCLASS()
 class FPS_AT2_API AFPS_AT2PlayerController : public APlayerController
@@ -25,6 +26,13 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	uint8 TeamNumber;
 public:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FShowHudDelegate ShowHudDelegate;
+	/*UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Hud")*/
+	void DisableHud();
+	/*UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Hud")*/
+	void ShowHud();
 	virtual void SetupInputComponent() override;
 
 	//UPROPERTY(BlueprintAssignable, Category = "Events")
@@ -52,6 +60,10 @@ public:
 	void OnToggleScoreBoard();
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Menus")
 	void OnHideScoreBoard();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Startup")
+	void ShowEndGameOrNextRoundScreen1(class UUserWidget* WidgetToShow, bool EndGame = false);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Startup")
+	void ShowPlayerSelectionOnStartUp();
 	void Test();
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Game Settings")
@@ -80,6 +92,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AI_Tasks")
 	void CallAssistance();
+
+	virtual void OnPossess(APawn* aPawn) override;
+	virtual void OnUnPossess() override;
 
 	uint8 RegisteredNumberOfBots();
 private:

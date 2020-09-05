@@ -2,4 +2,9 @@
 
 
 #include "FPSSpectatorPawn.h"
+#include "GameFramework/SpectatorPawnMovement.h"
 
+AFPSSpectatorPawn::AFPSSpectatorPawn()
+{
+	//Set max speed
+}

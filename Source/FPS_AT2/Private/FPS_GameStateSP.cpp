@@ -2,7 +2,7 @@
 
 
 #include "FPS_GameStateSP.h"
-void AFPS_GameStateSP::AddScore_Implementation(int WhichTeamScored)
+int32 AFPS_GameStateSP::AddScore_Implementation(int WhichTeamScored)
 {
 	switch (WhichTeamScored)
 	{
@@ -13,7 +13,7 @@ void AFPS_GameStateSP::AddScore_Implementation(int WhichTeamScored)
 		TeamBScore++;
 		break;
 	}
-	return;
+	return WhichTeamScored;
 }
 
 void AFPS_GameStateSP::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const

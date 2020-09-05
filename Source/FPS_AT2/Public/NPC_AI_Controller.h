@@ -50,6 +50,8 @@ public:
 	void ReOrderByDistance(TArray<AActor*> Actors, bool OrderByLower = true);
 	UFUNCTION(BlueprintCallable, Category = "Algorithms")
 	int32 GetMaxInt(TArray<int32> IntArray);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Tasks")
+	void ShouldClearObjectiveOrSet(bool Set);
 
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI")
@@ -105,6 +107,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Cover)
 	FCoverType CoverTypes;
-protected:
-	void CallAssistance();
+public:
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	int CallAssistance();
 };

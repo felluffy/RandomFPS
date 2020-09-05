@@ -16,12 +16,14 @@ class FPS_AT2_API AFPS_GameStateSP : public AGameState
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(BlueprintReadOnly, Replicated)
-		int32 TeamAScore;
-	UPROPERTY(BlueprintReadOnly, Replicated)
-		int32 TeamBScore;
+	UPROPERTY(BlueprintReadWrite, Replicated)
+		int32 TeamAScore = 0;
+	UPROPERTY(BlueprintReadWrite, Replicated)
+		int32 TeamBScore = 0;
+	UPROPERTY(BlueprintReadWrite, Replicated)
+		int32 RoundsToWin = 10;
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Replicated)
-		float RoundTimesInSeconds;
+		float RoundTimesInSeconds =  180.f;
 	UPROPERTY(BlueprintReadWrite, Replicated)
 		bool bReadyToStart = 0;
 	UPROPERTY(BlueprintReadWrite, Replicated)
@@ -29,7 +31,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Replicated)
 		float TimeElapsedSinceGameStart = 0;
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void AddScore(int WhichTeamScored);
+	int32 AddScore(int32 WhichTeamScored);
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 		void OnStartMatch();
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)

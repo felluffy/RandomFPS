@@ -151,6 +151,11 @@ int32 ANPC_AI_Controller::GetMaxInt(TArray<int32> Array)
 	return max;
 }
 
+void ANPC_AI_Controller::ShouldClearObjectiveOrSet_Implementation(bool Set)
+{
+
+}
+
 bool ANPC_AI_Controller::ShouldCrouchBehindCover()
 {
 	//get hit from pawn, and a line trace from midddle of body to front, !blocked1 and blocked2
@@ -161,4 +166,9 @@ bool ANPC_AI_Controller::ShouldCrouchBehindCover()
 	//FVector LineTraceEnd = Eye
 	//UKismetSystemLibrary::LineTraceSingle(GetWorld(), )
 	return true;
+}
+
+int ANPC_AI_Controller::CallAssistance()
+{
+	return 0;
 }

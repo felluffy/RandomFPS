@@ -10,8 +10,10 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "FPSSpectatorPawn.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "GrenadeExp.h"
 #include "WeaponBase.h" 	
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -33,6 +35,11 @@
 void AFPS_Charachter::OnKilledCharacter2Func_Implementation(class AFPS_Charachter* Killed, class AFPS_Charachter* KilledBy)
 {
 	UE_LOG(LogTemp, Error, TEXT("%s - killed by %s - is owner; %s"), *(Killed->GetName()), *(KilledBy->GetName()), *(this->GetName()));
+}
+
+void AFPS_Charachter::OnDeathAddDeathToServer_Func_Implementation(class AFPS_Charachter* CharacterDied)
+{
+	UE_LOG(LogTemp, Error, TEXT("%s - this guy died"), *(CharacterDied->GetName()));
 }
 
 // Sets default values
@@ -79,6 +86,7 @@ AFPS_Charachter::AFPS_Charachter()
 	MovementComponent->MaxWalkSpeedCrouched = 200;
 	DropWeaponMaxDistance = 200.0f;
 	SprintingSpeedModifier = 3.0f;
+	bInactive = false;
 }
 
 // Called when the game starts or when spawned
@@ -96,6 +104,7 @@ void AFPS_Charachter::BeginPlay()
 			this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
 	}
 	//this->OnDeathNotify.AddDynamic(this, &AFPS_Charachter::OnKilledCharacter);
+	this->OnDeathAddDeathToServer.AddDynamic(this, &AFPS_Charachter::OnDeathAddDeathToServer_Func);
 
 	if (DefaultWeaponClasses.Num() > 0)
 	{
@@ -152,6 +161,7 @@ void AFPS_Charachter::MoveForward(float Value)
 			Value /= 1.5;
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
+
 }
 
 void AFPS_Charachter::MoveRight(float Value)
@@ -255,8 +265,8 @@ void AFPS_Charachter::OnMovementPlaySound_Implementation()
 void AFPS_Charachter::NextWeapon()
 {
 	if (Inventory.Num() > 1 && !CurrentWeapon->IsReloading())
-	{	
-		if(IsAimingDown)
+	{
+		if (IsAimingDown)
 			ZoomOutFromWeapon();
 		int32 Index;
 		Inventory.Find(CurrentWeapon, Index);
@@ -518,8 +528,12 @@ void AFPS_Charachter::ZoomInToWeapon()
 {
 	//ZoomCameraComponent->Render;
 	IsAimingDown = true;
-	CurrentWeapon->bZoomed = true;
-	FirstPersonCameraComponent->FieldOfView = FMath::FInterpTo(CurrentWeapon->GetWeaponFov(), DefaultFieldOfView, GetWorld()->GetDeltaSeconds(), .8f);
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->bZoomed = true;
+
+		FirstPersonCameraComponent->FieldOfView = FMath::FInterpTo(CurrentWeapon->GetWeaponFov(), DefaultFieldOfView, GetWorld()->GetDeltaSeconds(), .8f);
+	}
 	MovementComponent->MaxWalkSpeed = 200;
 
 }
@@ -527,9 +541,12 @@ void AFPS_Charachter::ZoomInToWeapon()
 void AFPS_Charachter::ZoomOutFromWeapon()
 {
 	IsAimingDown = false;
-	CurrentWeapon->bZoomed = false;
-	
-	FirstPersonCameraComponent->FieldOfView = FMath::FInterpTo(DefaultFieldOfView, CurrentWeapon->GetWeaponFov(), GetWorld()->GetDeltaSeconds(), .8f);
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->bZoomed = false;
+
+		FirstPersonCameraComponent->FieldOfView = FMath::FInterpTo(DefaultFieldOfView, CurrentWeapon->GetWeaponFov(), GetWorld()->GetDeltaSeconds(), .8f);
+	}
 	MovementComponent->MaxWalkSpeed = 300;
 }
 
@@ -553,30 +570,48 @@ void AFPS_Charachter::AddWeaponToInventory(AWeaponBase* Weapon)
 
 void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
+
+	UE_LOG(LogTemp, Warning, TEXT("%s damage causer"), *(DamageCauser->GetName()));
 	if (Health <= 0.0f && !bInactive)
 	{
 		bInactive = true;
 		GetMovementComponent()->StopMovementImmediately();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		AController* CurrentController = Cast<AController>(GetController());
+		AController* CurrentController = Cast<AFPS_AT2PlayerController>(GetController());
+		OnDeathAddDeathToServer.Broadcast(this);
 		if (CurrentController)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Healh: %d player con: %s"), Health, *Controller->GetName()));
 			CurrentController->UnPossess();
-			//CurrentController->StopMovement();
-			CurrentController->Destroy();
-		}
+			//PlayerController_AFPS2->UnPossess();
+			CurrentController->StopMovement();
+			//CurrentController->Destroy();
+			//ADD  DEATH TO SERVER;
 
+			DetachFromControllerPendingDestroy();
+			FActorSpawnParameters ActorSpawnParams;
+			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+			FTransform trans = this->GetTransform();
+
+			UWorld* const World = GetWorld();
+			auto bbb = World->SpawnActor<AFPSSpectatorPawn>(AFPSSpectatorPawn::StaticClass(), this->GetTransform(), ActorSpawnParams);
+			CurrentController->Possess(bbb);
+		}
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Healh: %d DEADAIFEIAT con: %s"), Health, *Controller->GetName()));
 		Mesh3P->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Mesh3P->SetAllBodiesSimulatePhysics(true);
 		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Mesh3P->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_MAX);
-		//DropWeapon(CurrentWeapon);
-		//UE_LOG(LogTemp, Warning, TEXT("%s damage causer"), *(DamageCauser->GetName()));
-		auto Causer = Cast<AFPS_Charachter>(InstigatedBy->GetCharacter());
-		if (Causer != NULL)
+		//DropWeapon(CurrentWeapon)
+		UE_LOG(LogTemp, Warning, TEXT("%s damage causer"), *(DamageCauser->GetName()));
+		if (InstigatedBy)
 		{
-			OnDeathNotify.Broadcast(this, Causer);
-			UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+			auto Causer = Cast<AFPS_Charachter>(InstigatedBy->GetCharacter());
+			if (Causer != NULL)
+			{
+				OnDeathNotify.Broadcast(this, Causer);
+				UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+			}
 		}
 		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
 		HealthComponent->Deactivate();
@@ -584,7 +619,7 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 		DropWeapon(CurrentWeapon);
 		//Mesh3P->SetAnimationMode(0);
 		//Mesh1P->SetAnimationMode(EAnimationMode::Type::);
-		DetachFromControllerPendingDestroy();
+
 
 	}
 	else if (OnDamagedShake != NULL)
@@ -606,9 +641,9 @@ void AFPS_Charachter::OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, fl
 		this->OrderGuard();
 	else if (RecognizedWord.Contains("charge") || RecognizedWord.Contains("attack") || RecognizedWord.Contains("strike") || RecognizedWord.Contains("rush") || RecognizedWord.Contains("storm") || RecognizedWord.Contains("ambush") || RecognizedWord.Contains("assault"))
 		this->OrderAIAttack();
-	else if(RecognizedWord.Contains("assistance") || RecognizedWord.Contains("help") || RecognizedWord.Contains("support"))// || RecognizedWord.Contains("get behind") ||  RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind"))
+	else if (RecognizedWord.Contains("assistance") || RecognizedWord.Contains("help") || RecognizedWord.Contains("support"))// || RecognizedWord.Contains("get behind") ||  RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind") || RecognizedWord.Contains("get behind"))
 		this->OrderCallAssistance();
-	else if(RecognizedWord.Contains("dismiss") || RecognizedWord.Contains("as you were") || RecognizedWord.Contains("get back"))
+	else if (RecognizedWord.Contains("dismiss") || RecognizedWord.Contains("as you were") || RecognizedWord.Contains("get back"))
 		this->OrderDismiss();
 }
 
@@ -642,7 +677,7 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 	for (int i = 0; i < sockets.Num(); i++)
 	{
 		FVector socketLocation = Mesh3P->GetSocketLocation(sockets[i]);
-		UE_LOG(LogTemp, Error, TEXT("Socket -Name checked: %s"), *(sockets[i].ToString()));
+		//UE_LOG(LogTemp, Error, TEXT("Socket -Name checked: %s"), *(sockets[i].ToString()));
 		const bool bHitSocket = GetWorld()->LineTraceSingleByObjectType(HitResult, ObserverLocation, socketLocation
 			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic))
 			, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));
@@ -706,7 +741,7 @@ float AFPS_Charachter::PlayAnimMontage(class UAnimMontage* AnimMontage, float In
 
 float AFPS_Charachter::PlayAnimMontageOnMesh(class UAnimMontage* AnimMontage, float InPlayRate /*= 1.f*/, FName StartSectionName /*= NAME_None*/, bool UseFP /*= false*/)
 {
-	if(UseFP)
+	if (UseFP)
 		MeshToUse = Mesh1P;
 	else
 		MeshToUse = Mesh3P;
@@ -719,7 +754,7 @@ void AFPS_Charachter::SlideCharacter()
 	{
 		bIsSliding = true;
 		GetWorldTimerManager().SetTimer(SlideTimerHandle, this, &AFPS_Charachter::StopSliding, SlideTime, false);
-		
+
 		MovementComponent->AddImpulse(GetFirstPersonCameraComponent()->GetForwardVector() * 500);
 		if (SlideAnimation != NULL)
 		{
@@ -729,10 +764,10 @@ void AFPS_Charachter::SlideCharacter()
 }
 
 void AFPS_Charachter::StopSliding()
-{	
+{
 	if (bIsSliding)
 	{
-		while(GetVelocity().Size() > 600);
+		while (GetVelocity().Size() > 600);
 		bIsSliding = false;
 	}
 }
@@ -740,6 +775,7 @@ void AFPS_Charachter::StopSliding()
 
 void AFPS_Charachter::PossessedBy(AController* NewController)
 {
+	Super::PossessedBy(NewController);
 	if (NewController != NULL)
 	{
 		//AFPS_AT2PlayerController ToSetController = Cast<AFPS_AT2PlayerController>(NewController);
@@ -750,12 +786,67 @@ void AFPS_Charachter::PossessedBy(AController* NewController)
 
 void AFPS_Charachter::UnPossessed()
 {
+	this->PlayerController_AFPS2 = nullptr;
+	Super::UnPossessed();
+}
 
+void AFPS_Charachter::TriggerGrenade()
+{
+	if (GrenadeCount > 0 && GrenadeClass)
+	{
+		TimeSetToThrow = GetWorld()->GetRealTimeSeconds();
+		StopFire();
+		bIsAboutToUseGrenade = true;
+	}
+}
+
+void AFPS_Charachter::ThrowGrenade()
+{
+	if (bIsAboutToUseGrenade)
+	{
+	
+		float CurrentTime = (GetWorld()->GetRealTimeSeconds() - TimeSetToThrow) * 2;
+		float CurrentMultiplier = FMath::Clamp(CurrentTime, MinSpeedToThrowGrenadein, MaxSpeedToThrowGrenadein);
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Time %f - %f"), GetWorld()->TimeSeconds,  CurrentTime));
+		//Use animations to trigger later on
+		auto SpawnPoint = GetActorLocation() + FVector(0,0, 50) + (GetFirstPersonCameraComponent()->GetForwardVector() * 50);
+
+		auto SpawnRot = GetFirstPersonCameraComponent()->GetComponentRotation();
+		FActorSpawnParameters asp;
+		asp.Instigator = this;
+		asp.Owner = this;
+		asp.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		auto Nade = GetWorld()->SpawnActor<AGrenadeExp>(GrenadeClass, SpawnPoint, FRotator(0,0,0), asp);
+		//Account char vel
+		FVector Forward = GetFirstPersonCameraComponent()->GetForwardVector();
+		FVector Impulse = GetActorLocation() + (Forward * (500.0f * CurrentMultiplier) + Forward * FVector::DotProduct(Forward, GetVelocity()));
+		FVector OutLaunchVelocity;
+		UKismetSystemLibrary::DrawDebugLine(GetWorld(), SpawnPoint, Impulse, FLinearColor::Green, 5, 2);
+		UKismetSystemLibrary::DrawDebugSphere(GetWorld(), Impulse, 50, 4, FLinearColor::White, 14, 5);
+		bool bHaveAimSolution = UGameplayStatics::SuggestProjectileVelocity_CustomArc
+		(
+			this,
+			OutLaunchVelocity,
+			SpawnPoint,
+			Impulse,
+			0.0F,
+			.8F
+		);
+		if(bHaveAimSolution)
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Current multiplier, %f"), CurrentMultiplier));
+		//FVector Vel = (Impulse + OutLaunchVelocity);// + (Forward * 5000.0f);
+		Nade->SetProjectileVelocityOnThrow_2(OutLaunchVelocity, CurrentMultiplier);
+		
+		
+		bIsAboutToUseGrenade = false;
+		GrenadeCount--;
+
+	}
 }
 
 void AFPS_Charachter::RemoveAllWidgetsFromViewPort_Implementation()
 {
-	
+
 }
 
 //void AFPS_Charachter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -826,7 +917,7 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		//const FVector LinetraceEnd = LinetraceStart + (CameraRotation.Vector() * DropWeaponMaxDistance);
 		FVector LinetraceStart = Mesh3P->GetBoneLocation("hand_r");//GetFirstPersonCameraComponent()->GetComponentLocation();
 		FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
-		FVector LinetraceEnd = SpawnLocation  = LinetraceStart + (NormalRotation * 20);
+		FVector LinetraceEnd = SpawnLocation = LinetraceStart + (NormalRotation * 20);
 		//DrawDebugSphere(GetWorld(), LinetraceStart, 30, 8, FColor::Green, true, 5, 0, 2);
 		//DrawDebugSphere(GetWorld(), LinetraceEnd, 30, 8, FColor::Red, true, 5, 0, 2);
 
@@ -849,7 +940,7 @@ void AFPS_Charachter::DropWeapon(AWeaponBase* Weapon)
 		//	DrawDebugSphere(GetWorld(), SpawnLocation, 30, 8, FColor::Blue, true, 5, 0, 2);
 		FActorSpawnParameters SpawnParams;
 		AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(CurrentWeapon->GetClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
-		
+
 		NewWeapon->DroppedOnWorld();
 		NewWeapon->SetCurrentAmmo(CurrentWeapon->GetCurrentAmmo(), CurrentWeapon->GetCurrentAmmoInMagazine());
 
@@ -894,6 +985,8 @@ void AFPS_Charachter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &AFPS_Charachter::ZoomInToWeapon);
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &AFPS_Charachter::ZoomOutFromWeapon);
 	PlayerInputComponent->BindAction("Slide", IE_Pressed, this, &AFPS_Charachter::SlideCharacter);
+	PlayerInputComponent->BindAction("Throw", IE_Pressed, this, &AFPS_Charachter::TriggerGrenade);
+	PlayerInputComponent->BindAction("Throw", IE_Released, this, &AFPS_Charachter::ThrowGrenade);
 
 	//PlayerInputComponent->BindAction("TEST_COMMAND_1", IE_Pressed, this, &AFPS_Charachter::CommandBot);
 	PlayerInputComponent->BindAction("NextItem", IE_Pressed, this, &AFPS_Charachter::NextWeapon);

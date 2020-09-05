@@ -33,3 +33,13 @@ void AFPS_CharacterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(AFPS_CharacterPlayerState, TeamNumber);
 	DOREPLIFETIME(AFPS_CharacterPlayerState, ScorePoints);
 }
+
+//void AFPS_CharacterPlayerState::SetTeam_Implementation(uint8 ToSetTeamNumber)
+//{
+//
+//}
+//
+//bool  AFPS_CharacterPlayerState::SetTeam_Validate()
+//{
+//	return true;
+//}

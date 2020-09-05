@@ -7,7 +7,9 @@
 #include "Perception/AISightTargetInterface.h"
 #include "FPS_Charachter.generated.h"
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeathSignature, AFPS_Charachter*, KilledCharacter, AFPS_Charachter*, KilledByCharacter);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeathAddDeathToServer, AFPS_Charachter*, CharacterDied);
 DECLARE_EVENT_TwoParams(AFPS_Charachter, FOnDeathEventSignature, AFPS_Charachter*, AFPS_Charachter*);
+
 
 UCLASS()
 class FPS_AT2_API AFPS_Charachter : public ACharacter, public IAISightTargetInterface
@@ -29,16 +31,21 @@ public:
 		class UVoiceHttpSTTComponent* VoiceComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UAudioCaptureComponent* AudioCaptureComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class USpringArmComponent* SpringArm;
 	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "STT")
 	class USynthComponent* SynthComponent;*/
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDeathSignature OnDeathNotify;
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnDeathAddDeathToServer OnDeathAddDeathToServer;
 	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
 	//void OnKilledCharacter(class AFPS_Charachter* Killed, class AFPS_Charachter* KilledBy);
-
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
 		void OnKilledCharacter2Func(class AFPS_Charachter* Killed, class AFPS_Charachter* KilledBy);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Events")
+		void OnDeathAddDeathToServer_Func(class AFPS_Charachter* CharacterDied);
 
 public:
 	// Sets default values for this character's properties
@@ -293,4 +300,20 @@ protected:
 public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
+protected:
+
+	void TriggerGrenade();
+	UFUNCTION(BlueprintCallable, Category = "Grenades")
+	void ThrowGrenade();
+		UPROPERTY(EditDefaultsOnly, Category = "Grenades")
+	TSubclassOf<class AGrenadeExp> GrenadeClass; // One fro now
+	UPROPERTY(EditDefaultsOnly, Category = "Grenades")
+	bool bIsAboutToUseGrenade;
+	UPROPERTY(EditDefaultsOnly, Category = "Grenades")
+	uint8 GrenadeCount;
+	float TimeSetToThrow;
+	UPROPERTY(EditDefaultsOnly, Category = "Grenades")
+	float MaxSpeedToThrowGrenadein;
+	UPROPERTY(EditDefaultsOnly, Category = "Grenades")
+		float MinSpeedToThrowGrenadein;
 };

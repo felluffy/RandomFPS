@@ -13,5 +13,5 @@ UCLASS()
 class FPS_AT2_API AFPSSpectatorPawn : public ASpectatorPawn
 {
 	GENERATED_BODY()
-	
+	AFPSSpectatorPawn();
 };

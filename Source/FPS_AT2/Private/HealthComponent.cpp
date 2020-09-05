@@ -80,7 +80,7 @@ void UHealthComponent::TakeAnyDamage(AActor * DamagedActor, float Damage, const 
 		}
 		CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
 		UE_LOG(LogTemp, Log, TEXT("Health at %f"), CurrentHealth);
-
+		OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
 		//OnHealthChanged.Broadcast(this, CurrentHealth, Damage, DamageType, InstigatedBy, DamageCauser);
 		
 		//To relocate to character object

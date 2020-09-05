@@ -19,5 +19,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team options")
 	bool bIsTeamStart;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team options")
-		bool bCanBeUsed;
+	bool bCanBeUsed = true; //Initially true
 };

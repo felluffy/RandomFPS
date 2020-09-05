@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "VoiceHttpSTTComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "PatrolComponent.h"
 
 AAI_Character::AAI_Character()
@@ -45,6 +46,16 @@ void AAI_Character::BeginPlay()
 	//UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon - con %s"), *CurrentWeapon->WeaponName.ToString(), *GetController()->GetName());
 
 	}
+	this->OnDeathAddDeathToServer.AddDynamic(this, &AFPS_Charachter::OnDeathAddDeathToServer_Func);
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFPS_Charachter::StaticClass(), FoundActors);
+	for (auto &it : FoundActors)
+	{
+		auto Character = Cast<AFPS_Charachter>(it);
+
+		if (Character && Character != this)
+			this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
+	}
 }
 
 
@@ -68,19 +79,25 @@ void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Hea
 		//	CurrentController->Destroy();
 		//	/*UE_LOG(LogTemp, Warning, TEXT("%s controller AI_CHAR"), *CurrentController->GetName());*/
 		//}
+		OnDeathAddDeathToServer.Broadcast(this);
 		GetCharacterMovement()->DisableMovement();
 		//DetachFromControllerPendingDestroy();
 		//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD"));
-		
+
 		Mesh3P->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Mesh3P->SetAllBodiesSimulatePhysics(true);
 		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Mesh3P->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_MAX);
-		auto Causer = Cast<AFPS_Charachter>(InstigatedBy->GetCharacter());
-		if (Causer != NULL)
+
+		if (InstigatedBy)
 		{
-			OnDeathNotify.Broadcast(this, Causer);
-			//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+			auto InstigatorCharachter = InstigatedBy->GetCharacter();
+			auto Causer = Cast<AFPS_Charachter>(InstigatorCharachter);
+			if (Causer != NULL)
+			{
+				OnDeathNotify.Broadcast(this, Causer);
+				//UE_LOG(LogTemp, Warning, TEXT("Health at DEAD notified"));
+			}
 		}
 		HealthComponent->Deactivate();
 		bDropWeaponOnDeath = true;

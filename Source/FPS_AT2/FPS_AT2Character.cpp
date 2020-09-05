@@ -103,7 +103,7 @@ void AFPS_AT2Character::BeginPlay()
 	Spawned_weapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
 	//Spawned_weapon->AnimInstance = Mesh1P->GetAnimInstance();
 
-	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_AT2Character::OnHealthChanged);	
+	//HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_AT2Character::OnHealthChanged);	
 
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
 	//FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
