@@ -6,6 +6,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Components/PrimitiveComponent.h"
 #include "Engine/EngineTypes.h"
 #include <string>
 #include "Kismet/GameplayStatics.h"
@@ -88,8 +89,9 @@ void ABullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 			
 			//UGameplayStatics::ReportDam
 		}
+		auto Prim = Cast<UPrimitiveComponent>(OtherActor);
 		if (OtherComp->IsSimulatingPhysics())
-			OtherComp->AddImpulseAtLocation(GetVelocity() * 10.0f, GetActorLocation());
+			OtherComp->AddImpulseAtLocation(GetVelocity() / (Prim == NULL ? 1 : Prim->GetMass()), GetActorLocation());
 		//@TODO Add decal on impact
 		//UGameplayStatics::SpawnDecalAtLocation(GetWorld(), )
 		
@@ -106,9 +108,10 @@ void ABullet::PlayParticle(const FHitResult& Hit)
 	
 	EPhysicalSurface SurfaceType = SurfaceType_Default;
 	SurfaceType = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
-	UParticleSystem* ImpactParticle = GetSurfaceMat(SurfaceType, ImpactParticles);
+	FVector ScaleOut;
+	UParticleSystem* ImpactParticle = GetSurfaceMat(SurfaceType, ImpactParticles, ScaleOut, true);
 	if(ImpactParticle || DefaultParticle)
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle != NULL ? ImpactParticle : DefaultParticle, FTransform(GetActorLocation()));
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle != NULL ? ImpactParticle : DefaultParticle, FTransform(FRotator(0, 0, 0), GetActorLocation(), ScaleOut));  //.3 for using grenade vfxs
 }
 
 void ABullet::ApplyDecal(const FHitResult& Hit)
@@ -116,7 +119,8 @@ void ABullet::ApplyDecal(const FHitResult& Hit)
 	EPhysicalSurface SurfaceType = SurfaceType_Default;
 	SurfaceType = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
 	UE_LOG(LogTemp, Warning, TEXT("%d - surfacetype"), SurfaceType);
-	UMaterial* ImpactHole = GetSurfaceMat(SurfaceType, BulletImpactHoles);
+	FVector Scale;
+	UMaterial* ImpactHole = GetSurfaceMat(SurfaceType, BulletImpactHoles, Scale);
 	FRotator Rotation = UKismetMathLibrary::MakeRotFromX(-1 * Hit.ImpactNormal);
 	Rotation.Roll += FMath::RandRange(-90, 90);
 	if(ImpactHole || DefaultBulletHole)

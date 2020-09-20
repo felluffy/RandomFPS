@@ -5,6 +5,9 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include <vector>
+#include <algorithm>
+#include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Bool.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
@@ -86,7 +89,7 @@ void ANPC_AI_Controller::BeginPlay()
 
 }
 
-void ANPC_AI_Controller::ScoreItems()
+void ANPC_AI_Controller::ScoreItems_Implementation()
 {
 
 }
@@ -138,14 +141,15 @@ void ANPC_AI_Controller::ReOrderByDistance(TArray<AActor*> Actors, bool OrderByL
 	}
 }
 
-int32 ANPC_AI_Controller::GetMaxInt(TArray<int32> Array)
+int32 ANPC_AI_Controller::GetMaxInt(TArray<int32> Array, int32 &RefIndex)
 {
 	int32 max = INT_MIN;
-	for (auto it : Array)
+	for(int32 i = 0; i != Array.Num(); i++)
 	{
-		if (max < it)
+		if (max < Array[i])
 		{
-			max = it;
+			max = Array[i];
+			RefIndex = i;
 		}
 	}
 	return max;
@@ -168,7 +172,86 @@ bool ANPC_AI_Controller::ShouldCrouchBehindCover()
 	return true;
 }
 
+void ANPC_AI_Controller::DisableBehaviorTreeAndBlackboard_Implementation()
+{
+
+}
+
+void ANPC_AI_Controller::InitOnMatchStart_Implementation()
+{
+
+}
+
 int ANPC_AI_Controller::CallAssistance()
 {
-	return 0;
+	auto FPSPlayer = Cast<AAI_Character>(this->GetPawn());
+
+	TArray<AFPS_Charachter*> ClosestCharacters;
+	std::vector<std::pair<float, int>> distances;
+	if (FPSPlayer != NULL)
+	{
+		auto PlayerLocation = FPSPlayer->GetActorLocation();
+		for (int i = 0; i != RegisterredControllersPair.Num(); i++)
+		{
+			auto BotLocation = RegisterredControllersPair[i].first->GetPawn()->GetActorLocation();
+			//TODO Average out the distance between the path distance and the direct distance LOOK for static UNavigationPath * FindPathToLocationSynchronously
+			distances.push_back({ (PlayerLocation - BotLocation).Size(), i });
+		}
+	}
+	std::sort(distances.begin(), distances.end(), [](std::pair<float, int> a, std::pair<float, int> b) { return a.first < b.first; });
+	int num = 0;
+	bool SuccessfullyCalledSomeoneInDistance = false;
+	for (auto &it : distances)
+	{
+		if ((RegisterredControllersPair[it.second].first->bHasLOSToEnemy == false) && it.first < AcceptanceRadius)
+		{
+			RegisterredControllersPair[it.second].first->bShouldDefend = true;
+			RegisterredControllersPair[it.second].first->CharacterToFollow = FPSPlayer;
+			RegisterredControllersPair[it.second].first->bAskedAssistance = true;
+			SuccessfullyCalledSomeoneInDistance = true;
+			num++;
+		}
+	}
+	if (!SuccessfullyCalledSomeoneInDistance)	
+	{
+		for (auto &it : distances)
+		{
+			if (RegisterredControllersPair[it.second].first->bHasLOSToEnemy == false)
+			{
+				RegisterredControllersPair[it.second].first->bShouldDefend = true;
+				RegisterredControllersPair[it.second].first->CharacterToFollow = FPSPlayer;
+				RegisterredControllersPair[it.second].first->bAskedAssistance = true;
+				SuccessfullyCalledSomeoneInDistance = true;
+				num++;
+				break;
+			}
+		}
+	}
+
+	return num;
+}
+
+void ANPC_AI_Controller::OnTimePassedClearTimer(float Seconds, float RandomizationLimit)
+{
+	if (GetWorldTimerManager().TimerExists(ClearPlayerTimer))
+	{
+		GetWorldTimerManager().ClearTimer(ClearPlayerTimer);
+	}
+	GetWorldTimerManager().SetTimer(ClearPlayerTimer, this, &ANPC_AI_Controller::ClearPlayer, FMath::Clamp(FMath::FRandRange(Seconds - RandomizationLimit, Seconds + RandomizationLimit), 0.f, 30.f), false);
+}
+
+void ANPC_AI_Controller::ClearCoverAfterSet_Implementation()
+{
+	GetWorldTimerManager().SetTimer(ClearCoverTImer, this, &ANPC_AI_Controller::ClearCover, FMath::Abs(FMath::FRandRange(TimeToClearTimerCover - 1.5f, TimeToClearTimerCover + 1.5f)));
+}
+
+void ANPC_AI_Controller::ClearCover()
+{
+
+}
+
+void ANPC_AI_Controller::ClearPlayer()
+{
+	if(CharacterToFollow)
+		CharacterToFollow = nullptr;
 }

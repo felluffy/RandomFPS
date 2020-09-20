@@ -43,5 +43,5 @@ private:
 	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	//void SendAudioRequest(const FString& Url, const FString& RequestContent);
 	UFUNCTION(BlueprintCallable)
-	void SendAudioRequest();
+	void SendAudioRequest(FString Path);
 };

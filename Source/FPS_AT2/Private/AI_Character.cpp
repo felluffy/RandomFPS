@@ -8,6 +8,7 @@
 #include "WeaponBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "TimerManager.h"
 #include "VoiceHttpSTTComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PatrolComponent.h"
@@ -29,34 +30,53 @@ void AAI_Character::BeginPlay()
 	Super::Super::BeginPlay();
 	//Super::BeginPlay();	
 	HealthComp->OnHealthChanged.AddDynamic(this, &AAI_Character::OnHealthChanged);
+	HealthComp->SetTeam(TeamNumber);
+	GetWorldTimerManager().SetTimer(SetupTeamsTimer, this, &AFPS_Charachter::SetupTeams, DelaySetup, false);
 	if (DefaultWeaponClasses.Num() > 0)
 	{
-		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0]);
-		CurrentWeapon->SetOwningPawn(this);
-		CurrentWeapon->AttachMeshToPawn();
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		//SpawnInfo.Owner = this;
+		CurrentWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[0], SpawnInfo);
+		CurrentWeapon->SetOwningPawn(this);
+		CurrentWeapon->AttachMeshToPawn();
+
+		//ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
+		//ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
+
+		//ZoomCameraComponent->Attach
+
 		Inventory.Add(CurrentWeapon);
-		if (DefaultWeaponClasses.Num() > 1)
+		for (int i = 1; i < DefaultWeaponClasses.Num(); i++)
 		{
-			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[1], SpawnInfo));
-			Inventory[1]->SetOwningPawn(this);
+			Inventory.Add(GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClasses[i], SpawnInfo));
+			Inventory[i]->SetOwningPawn(this);
 		}
-		//CurrentWeapon->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), WeaponAttachPoint);
-	//UE_LOG(LogTemp, Warning, TEXT("%s - is the current weapon - con %s"), *CurrentWeapon->WeaponName.ToString(), *GetController()->GetName());
-
 	}
+	DefaultWeaponClasses.Empty();
+
 	this->OnDeathAddDeathToServer.AddDynamic(this, &AFPS_Charachter::OnDeathAddDeathToServer_Func);
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFPS_Charachter::StaticClass(), FoundActors);
-	for (auto &it : FoundActors)
-	{
-		auto Character = Cast<AFPS_Charachter>(it);
+	//TArray<AActor*> FoundActors;
+	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFPS_Charachter::StaticClass(), FoundActors);
+	//for (auto &it : FoundActors)
+	//{
+	//	auto Character = Cast<AFPS_Charachter>(it);
 
-		if (Character && Character != this)
-			this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
+	//	if (Character && Character != this)
+	//		this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
+	//}
+	AController* CurrentController = GetController();
+	auto Con = Cast<ANPC_AI_Controller>(CurrentController);
+	if (Con)
+	{
+		Con->OwningPawn = this;
+		Con->InitOnMatchStart();
+		
 	}
+	GetWorldTimerManager().SetTimer(SetupTeamsTimer, this, &AFPS_Charachter::SetupTeams, DelaySetup, false);
 }
+
 
 
 void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Health, float HealthDelta, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
@@ -71,14 +91,19 @@ void AAI_Character::OnHealthChanged(UHealthComponent* HealthComponent, float Hea
 		bInactive = true;
 		GetMovementComponent()->StopMovementImmediately();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		//AController* CurrentController = GetController();
-		//if (CurrentController)
-		//{
-		//	CurrentController->UnPossess();
-		//	//CurrentController->StopMovement();
+		AController* CurrentController = GetController();
+		if (CurrentController)
+		{
+			CurrentController->UnPossess();
+			CurrentController->StopMovement();
+			auto Con = Cast<ANPC_AI_Controller>(CurrentController);
+			if (Con)
+			{
+				Con->DisableBehaviorTreeAndBlackboard();
+			}
 		//	CurrentController->Destroy();
 		//	/*UE_LOG(LogTemp, Warning, TEXT("%s controller AI_CHAR"), *CurrentController->GetName());*/
-		//}
+		}
 		OnDeathAddDeathToServer.Broadcast(this);
 		GetCharacterMovement()->DisableMovement();
 		//DetachFromControllerPendingDestroy();
@@ -119,6 +144,11 @@ void AAI_Character::GetActorEyesViewPoint(FVector& Location, FRotator& Rotation)
 void AAI_Character::GetPerceptionLocationAndRotation(FVector& Location, FRotator& Rotation) const
 {
 	Mesh3P->GetSocketWorldLocationAndRotation(EyeSocketName, Location, Rotation);
+}
+
+void AAI_Character::GetNewPathOnAllLoss_Implementation()
+{
+
 }
 
 void AAI_Character::RotateHeadOnGuard()

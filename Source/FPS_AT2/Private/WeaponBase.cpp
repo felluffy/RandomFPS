@@ -227,8 +227,10 @@ void AWeaponBase::OnFire()
 					FVector SpawnLocation;
 					//if (IsFirstPerson)
 					{
+						FQuat Rot;
 						// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-						SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation());// + SpawnRotation.RotateVector(GunOffset);
+						SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation());// + SpawnRotation.RotateVector(GunOffset); TP_Gun->GetSocketWorldLocationAndRotation(MuzzleSocketName, SpawnLocation
+						/*SpawnLocation = ((AI_Bot != nullptr) ? , Rot).)*/
 					}
 					//DrawDebugSphere(GetWorld(), FP_MuzzleLocation->GetComponentLocation(), 10, 2, FColor::Yellow, false, 3, 0, 5);
 					//else 

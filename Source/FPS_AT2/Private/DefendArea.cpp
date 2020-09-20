@@ -15,6 +15,7 @@ ADefendArea::ADefendArea()
 	Area->SetupAttachment(RootComponent);
 	Area->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Area->CastShadow = false;
+
 }
 
 // Called when the game starts or when spawned

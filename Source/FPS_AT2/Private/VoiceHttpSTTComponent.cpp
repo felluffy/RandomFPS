@@ -15,7 +15,7 @@ UVoiceHttpSTTComponent::UVoiceHttpSTTComponent()
 	Http = &FHttpModule::Get();
 	URL = TEXT("https://centralindia.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=detailed");
 	FileLocation = TEXT("C:\\Programming Tools\\Unreal Projects\\ABC.wav");
-	OAuthToken = TEXT("");
+	OAuthToken = TEXT("fcafc499185f474388c6c46e13a44d71");
 	VerbType = "POST";
 }
 
@@ -60,15 +60,16 @@ void UVoiceHttpSTTComponent::OnResponseReceived(FHttpRequestPtr Request, FHttpRe
 
 				float Accuracy = JsonMid->GetNumberField("Confidence");
 				FString ToReturnSentence = JsonMid->GetStringField("Display");
-				OnRecognizedSpeech.Broadcast(this, Accuracy, ToReturnSentence);
+				OnRecognizedSpeech.Broadcast(this, Accuracy, ToReturnSentence); 
 			}
 		}
 		
 	}
 }
 
-void UVoiceHttpSTTComponent::SendAudioRequest()
+void UVoiceHttpSTTComponent::SendAudioRequest(FString Path)
 {
+	//FileLocation = Path;
 	TSharedRef<IHttpRequest> Request = Http->CreateRequest();
 	Request->OnProcessRequestComplete().BindUObject(this, &UVoiceHttpSTTComponent::OnResponseReceived);
 	Request->SetURL(URL);
@@ -81,7 +82,7 @@ void UVoiceHttpSTTComponent::SendAudioRequest()
 	Request->SetHeader("Expect", "100-continue");
 	Request->SetHeader("Host", "centralindia.speech.microsoft.com");
 	bool resB = Request->SetContentAsStreamedFile(FileLocation);
-	UE_LOG(LogTemp, Error, TEXT("File found %d"), resB);
+	UE_LOG(LogTemp, Error, TEXT("File found %d, file loc - %s"), resB, *FileLocation);
 
 	Request->ProcessRequest();
 }

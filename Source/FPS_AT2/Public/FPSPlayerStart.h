@@ -20,4 +20,5 @@ public:
 	bool bIsTeamStart;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team options")
 	bool bCanBeUsed = true; //Initially true
+
 };

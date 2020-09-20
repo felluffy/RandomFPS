@@ -65,6 +65,12 @@ void AGrenadeExp::Explode()
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle, FTransform(GetActorLocation()));
 	}
 
+	if (!ensure(this->GetInstigator()))
+	{
+		MakeNoise(1, NULL, this->GetActorLocation(), 3000);	
+	}
+	else
+		MakeNoise(1, this->GetInstigator(), this->GetActorLocation(), 3000);
 	TArray<AActor*> IgnoreActors;
 	IgnoreActors.Add(this->GetInstigatorController());
 	UGameplayStatics::ApplyRadialDamageWithFalloff(this, Damage, 0, GetActorLocation(), 0, RadialForceComp->Radius, 10, UDamageType::StaticClass(), IgnoreActors, this, this->GetInstigatorController());

@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "FPS_Charachter.h"
+
+
+#include "GameFramework/CharacterMovementComponent.h"
 #include "AI_Character.generated.h"
 
 /**
@@ -33,6 +36,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	TArray<class ANPC_AI_Controller*> TeamMembers;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void GetNewPathOnAllLoss();
 protected:
 	UPROPERTY(BlueprintReadWrite, Category = DamageSense)
 	bool IsDamagedWithinSeconds;
@@ -48,5 +54,13 @@ public:
 			AAI_Controller = ToSet;
 	}
 	class ANPC_AI_Controller* GetAAIController() { return AAI_Controller; }
+	FTimerHandle timer;
+	
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void DisableControllerDesriredRotation() { GetCharacterMovement()->bUseControllerDesiredRotation = false; }
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void EnableControllerDesriredRotation() { GetCharacterMovement()->bUseControllerDesiredRotation = true; }
 	//class ANPC_AI_Controller GetController()
 };

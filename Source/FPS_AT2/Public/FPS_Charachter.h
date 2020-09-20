@@ -22,8 +22,8 @@ public:
 		class USkeletalMeshComponent* Mesh3P;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FirstPersonCameraComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* ZoomCameraComponent;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	//	class UCameraComponent* ZoomCameraComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 		class UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
@@ -87,13 +87,14 @@ protected:
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
 	 */
 	void LookUpAtRate(float Rate);
-
+public:
 	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void BeginCrouch();
 	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void EndCrouch();
 	void Jump() override;
 	void StopJumping() override;
+protected:
 	void Suicide();
 	UFUNCTION(BlueprintCallable, Category = "Player Movement")
 	void StartSprinting();
@@ -105,7 +106,9 @@ protected:
 	void CommandBot_3();
 	void CommandBot_4();
 	void OnPressedActionButton();
+	UFUNCTION(BlueprintCallable)
 	void ZoomInToWeapon();
+	UFUNCTION(BlueprintCallable)
 	void ZoomOutFromWeapon();
 
 
@@ -210,7 +213,9 @@ protected:
 		bool bShouldSprint = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Animations")
 		bool bIsJumpingToggled = false;
-	bool bAllowedToFire = true;
+
+	UPROPERTY(BlueprintReadOnly)
+		bool bAllowedToFire = true;
 
 	TSubclassOf<class AAI_Character> TeamClasses;
 
@@ -280,7 +285,13 @@ private:
 	void SlideCharacter();
 	void StopSliding();
 	FTimerHandle SlideTimerHandle;
-	
+
+protected:
+	FTimerHandle SetupTeamsTimer;
+
+	float DelaySetup = .3f;
+public:
+	void SetupTeams();
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	class UAnimMontage* SlideAnimation;
@@ -300,6 +311,10 @@ protected:
 public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Controller")
+	void OnPossessAttachHud();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Controller")
+	void OnUnpossessedRemoveHud();
 protected:
 
 	void TriggerGrenade();

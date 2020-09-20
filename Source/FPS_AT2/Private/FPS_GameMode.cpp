@@ -30,7 +30,7 @@ AFPS_GameMode::AFPS_GameMode()
 void AFPS_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	CreateBotControllers();
+	//CreateBotControllers();
 	//RegisterAllToDelegates();
 }
 
@@ -83,6 +83,9 @@ void AFPS_GameMode::CreateBotControllers()
 	AFPS_AT2PlayerController* const PlayerController_2 = Cast<AFPS_AT2PlayerController>(UGameplayStatics::GetPlayerController(World, 1));
 	AFPS_Charachter* TeamALeader = NULL;
 	AFPS_Charachter* TeamBLeader = NULL;
+	TArray<ANPC_AI_Controller*> Team1Players;
+	TArray<ANPC_AI_Controller*> Team2Players;
+
 	if (PlayerController_1)
 	{
 		TeamALeader = Cast<AFPS_Charachter>(PlayerController_1->GetPawn());
@@ -120,6 +123,28 @@ void AFPS_GameMode::CreateBotControllers()
 						PlayerController_2->AIChars.Add(Ai);
 					PlayerController_2->RegisterredControllersPair.Add(std::make_pair(AIC, false));
 					PlayerController_2->Listening.Add(false);
+				}
+			OwnedCharachter->TeamNumber == 1 ? Team1Players.Add(AIC) : Team2Players.Add(AIC);
+			}
+		}
+		for (int i = 0; i != Team1Players.Num(); i++)
+		{
+			for (int j = 0; j != Team1Players.Num(); j++)
+			{
+				if (i != j)
+				{
+					Team1Players[i]->RegisterredControllersPair.AddUnique(std::make_pair(Team1Players[j], true));
+				}
+			}
+		}
+
+		for (int i = 0; i != Team2Players.Num(); i++)
+		{
+			for (int j = 0; j != Team2Players.Num(); j++)
+			{
+				if (i != j)
+				{
+					Team2Players[i]->RegisterredControllersPair.AddUnique(std::make_pair(Team2Players[j], true));
 				}
 			}
 		}

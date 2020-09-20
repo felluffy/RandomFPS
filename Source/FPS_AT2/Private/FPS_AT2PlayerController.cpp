@@ -22,7 +22,7 @@ void AFPS_AT2PlayerController::BeginPlay()
 
 bool AFPS_AT2PlayerController::CommandMove_Implementation(FVector &WorldPosition, bool FromMap)
 {
-
+	
 	//OLD
 	//if (NPCs.Num() < 1)
 	//	return false;
@@ -42,12 +42,16 @@ bool AFPS_AT2PlayerController::CommandMove_Implementation(FVector &WorldPosition
 	{
 		if (!RegisterredControllersPair[i].second)
 			continue;
+		UKismetSystemLibrary::DrawDebugSphere(GetWorld(), WorldPosition, 110, 4, FColor::Red, 15, 5);
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Command move - world pos %f %f %f"), WorldPosition.X, WorldPosition.Y, WorldPosition.Z));
 		RegisterredControllersPair[i].first->TargetPoint = WorldPosition;
 		RegisterredControllersPair[i].first->IsPlayerCommanded = true;
+		RegisterredControllersPair[i].first->CharacterToFollow = nullptr;
+		//use to not congest
+		RegisterredControllersPair[i].first->bShouldMoveOnAsked = true; 
 		Locations.Push({ WorldPosition.X, WorldPosition.Y, WorldPosition.Z }), j++;
 		if (Num > 1 && j > 1)
 		{
-			//USE SOME ALGO HERE 
 			FVector SpawnVector;
 			SpawnVector.X = FMath::FRandRange(50, 100);
 			SpawnVector.Y = FMath::FRandRange(50, 100);
@@ -156,6 +160,7 @@ uint8 AFPS_AT2PlayerController::RegisteredNumberOfBots()
 
 void AFPS_AT2PlayerController::OrderAttack_Implementation(FVector &Location)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("ORder attack")));
 	TArray<AActor*> ActorsToIgnore;
 	TArray<AActor*> ActorsOut;
 	TArray<TEnumAsByte<enum EObjectTypeQuery>> objectTypes;
@@ -167,13 +172,13 @@ void AFPS_AT2PlayerController::OrderAttack_Implementation(FVector &Location)
 	{
 		ActorsToIgnore.Add(Cast<AFPS_Charachter>(RegisterredControllersPair[i].first->GetPawn()));
 	}
-	UKismetSystemLibrary::BoxOverlapActors(GetWorld(), Location, { 300, 300, 100 }, objectTypes, AFPS_Charachter::StaticClass(), ActorsToIgnore, ActorsOut);
+	UKismetSystemLibrary::BoxOverlapActors(GetWorld(), Location, { 800, 800, 200 }, objectTypes, AFPS_Charachter::StaticClass(), ActorsToIgnore, ActorsOut);
 
 	if (ActorsOut.Num() < 1)
 		return;
 	
 	for (int i = 0; i != RegisterredControllersPair.Num(); i++)		
-	{
+	{	
 		//TODO if not fighting only call them here
 
 		if (RegisterredControllersPair[i].first->bHasLOSToEnemy)
@@ -181,10 +186,12 @@ void AFPS_AT2PlayerController::OrderAttack_Implementation(FVector &Location)
 			RegisterredControllersPair[i].first->bShouldAttack = true;
 
 			//RegisterredControllersPair[i].first->EnemyCharacterCurrentlyInFocus = Cast<AFPS_Charachter>(ActorsOut[0]);
+			
 		}
-		else
+		/*RegisterredControllersPair[i].first->EnemyCharacterCurrentlyInFocus = Cast<AFPS_Charachter>(ActorsOut[0]);*/
+		for (int j = 0; j != ActorsOut.Num(); j++)
 		{
-			RegisterredControllersPair[i].first->EnemyCharacterCurrentlyInFocus = Cast<AFPS_Charachter>(ActorsOut[0]);
+			RegisterredControllersPair[i].first->ThreatList.AddUnique(Cast<AFPS_Charachter>(ActorsOut[j]));
 		}
 		RegisterredControllersPair[i].first->IsPlayerCommanded = true;
 	}
@@ -193,7 +200,12 @@ void AFPS_AT2PlayerController::OrderAttack_Implementation(FVector &Location)
 
 void AFPS_AT2PlayerController::OrderFollow_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Follow")));
 	auto FPSPlayer = Cast<AFPS_Charachter>(this->GetPawn());
+	if (FPSPlayer)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Player is %s"), *FPSPlayer->GetName()));
+	}
 	//if (FPSPlayer != NULL && RegisterredControllers.Num() > 0)
 	//{
 	//	for (int i = 0; i != RegisterredControllersPair.Num(); i++)
@@ -242,6 +254,7 @@ void AFPS_AT2PlayerController::OrderFollow_Implementation()
 
 void AFPS_AT2PlayerController::OrderGuard_Implementation(FVector &Location)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Guard")));
 	UNavigationSystemV1* navSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	if(navSystem)
 	{
@@ -280,11 +293,14 @@ void AFPS_AT2PlayerController::OrderDismiss_Implementation()
 	for (int i = 0; i != RegisterredControllersPair.Num(); i++)
 	{
 		RegisterredControllersPair[i].first->IsPlayerCommanded = false;
+		RegisterredControllersPair[i].first->bShouldGuard = false;
+		RegisterredControllersPair[i].first->CharacterToFollow = NULL;
 	}
 }
 
 void AFPS_AT2PlayerController::OrderCallAssistance_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Call assistance")));
 	auto FPSPlayer = Cast<AFPS_Charachter>(this->GetPawn());
 	
 	TArray<AFPS_Charachter*> ClosestCharacters;

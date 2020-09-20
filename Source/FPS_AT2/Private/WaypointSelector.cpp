@@ -27,7 +27,22 @@ EBTNodeResult::Type UWaypointSelector::ExecuteTask(UBehaviorTreeComponent& Owner
 		//UE_LOG(LogTemp, Warning, TEXT("%s missing waypoints"), *(AIController->GetName()));
 		return EBTNodeResult::Failed;
 	}
-
+	if(MoveTowardsClosestPoint)
+	{
+		float MinDistance = 99999999999.99f;
+		int ind = 0;
+		int toSetInd = 0;
+		for (auto point : waypoints)
+		{
+			if ((ControlledPawn->GetActorLocation() - point->GetActorLocation()).Size()< MinDistance)
+			{
+				MinDistance = (ControlledPawn->GetActorLocation() - point->GetActorLocation()).Size();
+				toSetInd = ind;
+			}
+			ind++;
+		}
+		index = toSetInd;
+	}
 	//set next waypoint
 	Blackboard->SetValueAsObject(Waypoint.SelectedKeyName, waypoints[index]);
 
@@ -36,4 +51,6 @@ EBTNodeResult::Type UWaypointSelector::ExecuteTask(UBehaviorTreeComponent& Owner
 	Blackboard->SetValueAsInt(Keys.SelectedKeyName, index);
 	//UE_LOG(LogTemp, Warning, TEXT("waypointselector at %s - %d"), *(Blackboard->GetKeyName(2).ToString()), index);
 	return EBTNodeResult::Succeeded;
+
+
 }

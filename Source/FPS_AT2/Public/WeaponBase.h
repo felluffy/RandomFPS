@@ -126,6 +126,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon_Classifiers)
 		float fWeaponRange = 5000;
 public:
+	UFUNCTION(BlueprintCallable)
+	float GetEffectiveRange() const { return this->fWeaponRange; } 
 	float GetWeaponFov() { return WeaponFOV; }
 	void SetOwningPawn(class AFPS_Charachter* NewOwner);
 	void AttachMeshToPawn();

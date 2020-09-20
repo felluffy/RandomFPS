@@ -31,5 +31,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 		struct FBlackboardKeySelector Waypoint;
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+		bool MoveTowardsClosestPoint;
 public:
 };

@@ -25,4 +25,13 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, Category = "Patrol")
 		TArray<AActor*> waypoints;
+
+private: 
+	FTimerHandle CoverFinderTimer;
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	float InitialDelay = 2.f;
+public:
+	UFUNCTION(BlueprintCallable, Category = "Setup")
+	void FindNearestPath();
+
 };

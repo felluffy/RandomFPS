@@ -14,6 +14,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "GrenadeExp.h"
+#include "NPC_AI_Controller.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "WeaponBase.h" 	
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -54,21 +56,26 @@ AFPS_Charachter::AFPS_Charachter()
 	Mesh3P->CastShadow = true;
 	Mesh3P->SetOwnerNoSee(true);
 
-
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>("CameraSpring");
+	
+	
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
-	ZoomCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ZoomCameraComponent"));
-	ZoomCameraComponent->SetupAttachment(FirstPersonCameraComponent);
-	ZoomCameraComponent->Deactivate();
+	//ZoomCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ZoomCameraComponent"));
+	//ZoomCameraComponent->SetupAttachment(FirstPersonCameraComponent);
+	//ZoomCameraComponent->Deactivate();
 	//ZoomCameraComponent->Deactivate();
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
+
+	SpringArm->SetupAttachment(FirstPersonCameraComponent);
+	SpringArm->bEnableCameraRotationLag = true;
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
 	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->SetupAttachment(SpringArm);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
@@ -87,6 +94,10 @@ AFPS_Charachter::AFPS_Charachter()
 	DropWeaponMaxDistance = 200.0f;
 	SprintingSpeedModifier = 3.0f;
 	bInactive = false;
+	Mesh3P->SetCollisionResponseToChannel(ECC_Camera, ECR_MAX);
+	Mesh3P->SetCollisionResponseToChannel(ECC_Visibility, ECR_MAX);
+	Mesh1P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 }
 
 // Called when the game starts or when spawned
@@ -95,17 +106,8 @@ void AFPS_Charachter::BeginPlay()
 	Super::BeginPlay();
 	HealthComp->OnHealthChanged.AddDynamic(this, &AFPS_Charachter::OnHealthChanged);
 	HealthComp->SetTeam(TeamNumber);
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFPS_Charachter::StaticClass(), FoundActors);
-	for (auto &it : FoundActors)
-	{
-		auto Character = Cast<AFPS_Charachter>(it);
-		if (Character && Character != this)
-			this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
-	}
-	//this->OnDeathNotify.AddDynamic(this, &AFPS_Charachter::OnKilledCharacter);
-	this->OnDeathAddDeathToServer.AddDynamic(this, &AFPS_Charachter::OnDeathAddDeathToServer_Func);
 
+	GetWorldTimerManager().SetTimer(SetupTeamsTimer, this, &AFPS_Charachter::SetupTeams, DelaySetup, false);
 	if (DefaultWeaponClasses.Num() > 0)
 	{
 		FActorSpawnParameters SpawnInfo;
@@ -116,8 +118,8 @@ void AFPS_Charachter::BeginPlay()
 		CurrentWeapon->SetOwningPawn(this);
 		CurrentWeapon->AttachMeshToPawn();
 
-		ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
-		ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
+		//ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
+		//ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
 
 		//ZoomCameraComponent->Attach
 
@@ -150,6 +152,8 @@ void AFPS_Charachter::BeginPlay()
 		//UE_LOG(LogTemp, Warning, TEXT("%s - is the current controller"), *PlayerController_AFPS2->GetName());
 	}
 	ZoomOutFromWeapon();
+
+
 }
 
 
@@ -177,6 +181,7 @@ void AFPS_Charachter::MoveRight(float Value)
 void AFPS_Charachter::TurnAtRate(float Rate)
 {
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	
 }
 
 void AFPS_Charachter::LookUpAtRate(float Rate)
@@ -205,8 +210,8 @@ void AFPS_Charachter::SetCurrentWeapon(AWeaponBase* PreviousWeapon, AWeaponBase*
 	}
 	NewWeapon->Equip();
 
-	ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
-	ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
+	//ZoomCameraComponent->SetWorldLocation(CurrentWeapon->GetFP_Gun()->GetSocketLocation("RifleZoomSocket"));
+	//ZoomCameraComponent->SetWorldRotation(CurrentWeapon->GetFP_Gun()->GetSocketRotation("RifleZoomSocket"));
 }
 
 
@@ -242,10 +247,10 @@ void AFPS_Charachter::Reload()
 
 void AFPS_Charachter::StartFire()
 {
+
 	if (bAllowedToFire && CurrentWeapon)
 	{
 		CurrentWeapon->StartFire();
-		//UE_LOG(LogTemp, Error, TEXT("%s"), *CurrentWeapon->WeaponName.ToString());
 	}
 }
 
@@ -298,14 +303,12 @@ bool AFPS_Charachter::CanFire()
 
 void AFPS_Charachter::OrderAIAttack()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OrderAIAttack()"));
 	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->OrderAttack(CurrentObjectHit.Location);
 }
 
 void AFPS_Charachter::OrderFollow()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OrderFollow()"));
 	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->OrderFollow();
 }
@@ -313,7 +316,6 @@ void AFPS_Charachter::OrderFollow()
 void AFPS_Charachter::OrderGuard()
 {
 	FVector Loc = CurrentObjectHit.Location;
-	UE_LOG(LogTemp, Warning, TEXT("OrderGuard()"));
 	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->OrderGuard(Loc);
 
@@ -321,7 +323,6 @@ void AFPS_Charachter::OrderGuard()
 
 void AFPS_Charachter::OrderDismiss()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OrderDismiss()"));
 	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->OrderDismiss();
 }
@@ -329,7 +330,6 @@ void AFPS_Charachter::OrderDismiss()
 
 void AFPS_Charachter::OrderCallAssistance()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OrderCallAssistance()"));
 	if (PlayerController_AFPS2)
 		PlayerController_AFPS2->CallAssistance();
 }
@@ -337,8 +337,8 @@ void AFPS_Charachter::OrderCallAssistance()
 void AFPS_Charachter::OrderAIGoToLocation(FVector Location, bool FromMap)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OrderAIGoToLocation"))
-		if (PlayerController_AFPS2)
-			PlayerController_AFPS2->CommandMove(Location, FromMap);
+	if (PlayerController_AFPS2)
+		PlayerController_AFPS2->CommandMove(Location, FromMap);
 }
 
 class AFPS_AT2PlayerController* AFPS_Charachter::GetPlayerAFPSController() const
@@ -361,12 +361,15 @@ void AFPS_Charachter::StopRecordingAudio_Implementation()
 void AFPS_Charachter::BeginCrouch()
 {
 	//CurrentWeapon->Unequip();
-	IsCrouching = true;
+	//IsCrouching = true;
 	if (IsAimingDown)
 		MovementComponent->MaxWalkSpeed = 150;
 	RecalculateBaseEyeHeight();
-	if (Mesh3P)
+	if (!IsCrouching && Mesh3P)
+	{
+		IsCrouching = true;
 		Mesh3P->RelativeLocation.Z += 44;
+	}
 	//Mesh3P->SetRelativeLocation(Get)
 	Crouch();
 }
@@ -374,12 +377,15 @@ void AFPS_Charachter::BeginCrouch()
 void AFPS_Charachter::EndCrouch()
 {
 	//CurrentWeapon->Equip();
-	IsCrouching = false;
+	
 	if (!IsAimingDown)
 		MovementComponent->MaxWalkSpeed = 250;
 	RecalculateBaseEyeHeight();
-	if (Mesh3P)
+	if (Mesh3P && IsCrouching)
+	{
+		IsCrouching = false;
 		Mesh3P->RelativeLocation.Z -= 44;
+	}
 	UnCrouch();
 }
 
@@ -462,7 +468,7 @@ void AFPS_Charachter::CommandBot_1()
 	//	FVector LinetraceStart = GetFirstPersonCameraComponent()->GetComponentLocation();
 	//	FVector NormalRotation = GetFirstPersonCameraComponent()->GetForwardVector();
 	//	FVector LineTraceEnd = LinetraceStart + (NormalRotation * 5000);	//lline trace range is 500
-	//	GetWorld()->LineTraceSingleByChannel(Hit, LinetraceStart, LineTraceEnd, ECC_Visibility);
+	//	GetWorld()->fByChannel(Hit, LinetraceStart, LineTraceEnd, ECC_Visibility);
 	//	FVector fv(0, 0, 0);
 	//	if (Hit.bBlockingHit)
 	//	{
@@ -527,6 +533,7 @@ void AFPS_Charachter::OnPressedActionButton()
 void AFPS_Charachter::ZoomInToWeapon()
 {
 	//ZoomCameraComponent->Render;
+	SpringArm->bEnableCameraRotationLag = false;
 	IsAimingDown = true;
 	if (CurrentWeapon)
 	{
@@ -541,6 +548,7 @@ void AFPS_Charachter::ZoomInToWeapon()
 void AFPS_Charachter::ZoomOutFromWeapon()
 {
 	IsAimingDown = false;
+	SpringArm->bEnableCameraRotationLag = true;
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->bZoomed = false;
@@ -562,7 +570,6 @@ void AFPS_Charachter::AddWeaponToInventory(AWeaponBase* Weapon)
 
 	Weapon->SetOwningPawn(this);
 	Inventory.AddUnique(Weapon);
-	UE_LOG(LogTemp, Warning, TEXT("%d num weapons"), Inventory.Num());
 }
 
 
@@ -597,7 +604,7 @@ void AFPS_Charachter::OnHealthChanged(UHealthComponent* HealthComponent, float H
 			auto bbb = World->SpawnActor<AFPSSpectatorPawn>(AFPSSpectatorPawn::StaticClass(), this->GetTransform(), ActorSpawnParams);
 			CurrentController->Possess(bbb);
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Healh: %d DEADAIFEIAT con: %s"), Health, *Controller->GetName()));
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Healh: %d DEADAIFEIAT con: %s"), Health, *Controller->GetName()));
 		Mesh3P->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Mesh3P->SetAllBodiesSimulatePhysics(true);
 		Mesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -645,6 +652,9 @@ void AFPS_Charachter::OnVoiceRecognized(UVoiceHttpSTTComponent* STTComponent, fl
 		this->OrderCallAssistance();
 	else if (RecognizedWord.Contains("dismiss") || RecognizedWord.Contains("as you were") || RecognizedWord.Contains("get back"))
 		this->OrderDismiss();
+
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Sentence retrieved: %s"), *RecognizedWord));
+
 }
 
 float AFPS_Charachter::PlayMontage(class UAnimMontage* MontageToPlay, float InPlayRate, FName StartSectionName)
@@ -672,16 +682,16 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 	FHitResult HitResult;
 
 	auto sockets = Mesh3P->GetAllSocketNames();
-
+	//UE_LOG(LogTemp, Error, TEXT("Socket -Name checked: %d"), sockets.Num());
 
 	for (int i = 0; i < sockets.Num(); i++)
 	{
 		FVector socketLocation = Mesh3P->GetSocketLocation(sockets[i]);
 		//UE_LOG(LogTemp, Error, TEXT("Socket -Name checked: %s"), *(sockets[i].ToString()));
 		const bool bHitSocket = GetWorld()->LineTraceSingleByObjectType(HitResult, ObserverLocation, socketLocation
-			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic))
-			, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));
-
+			, FCollisionObjectQueryParams(ECC_TO_BITFIELD(ECC_WorldStatic) | ECC_TO_BITFIELD(ECC_WorldDynamic) | ECC_TO_BITFIELD(ECC_Pawn))
+			, FCollisionQueryParams(NAME_AILineOfSight, true, IgnoreActor));	
+		//DrawDebugLine(GetWorld(), ObserverLocation, socketLocation, FColor::White, false, 1, 0, 2);
 		NumberOfLoSChecksPerformed++;
 
 		if (bHitSocket == false || (HitResult.Actor.IsValid() && HitResult.Actor->IsOwnedBy(this))) {
@@ -707,7 +717,7 @@ bool AFPS_Charachter::CanBeSeenFrom(const FVector& ObserverLocation, FVector& Ou
 		return true;
 	}
 
-	UE_LOG(LogTemp, Error, TEXT("false"));
+	//UE_LOG(LogTemp, Error, TEXT("false"));
 	OutSightStrength = 0;
 	return false;
 }
@@ -773,6 +783,31 @@ void AFPS_Charachter::StopSliding()
 }
 
 
+void AFPS_Charachter::SetupTeams()
+{
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFPS_Charachter::StaticClass(), FoundActors);
+	for (auto &it : FoundActors)
+	{
+		auto Character = Cast<AFPS_Charachter>(it);
+		if (Character && Character != this)
+			this->OnDeathNotify.AddDynamic(Character, &AFPS_Charachter::OnKilledCharacter2Func);
+		auto CurrentCon = this->GetController();
+	
+		if (CurrentCon && Cast<ANPC_AI_Controller>(CurrentCon) && Character->TeamNumber == this->TeamNumber)
+		{
+			auto Con = Cast<ANPC_AI_Controller>(Character->GetController());
+			if (Con)
+			{
+				Con->RegisterredControllersPair.Add(std::make_pair(Cast<ANPC_AI_Controller>(CurrentCon), false));
+			}
+		}
+
+	}
+	//this->OnDeathNotify.AddDynamic(this, &AFPS_Charachter::OnKilledCharacter);
+	this->OnDeathAddDeathToServer.AddDynamic(this, &AFPS_Charachter::OnDeathAddDeathToServer_Func);
+}
+
 void AFPS_Charachter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -781,6 +816,7 @@ void AFPS_Charachter::PossessedBy(AController* NewController)
 		//AFPS_AT2PlayerController ToSetController = Cast<AFPS_AT2PlayerController>(NewController);
 		this->Controller = NewController;
 		this->PlayerController_AFPS2 = Cast<AFPS_AT2PlayerController>(NewController);
+		OnPossessAttachHud();
 	}
 }
 
@@ -788,6 +824,17 @@ void AFPS_Charachter::UnPossessed()
 {
 	this->PlayerController_AFPS2 = nullptr;
 	Super::UnPossessed();
+	OnUnpossessedRemoveHud();
+}
+
+void AFPS_Charachter::OnUnpossessedRemoveHud_Implementation()
+{
+	
+}
+
+void AFPS_Charachter::OnPossessAttachHud_Implementation()
+{
+
 }
 
 void AFPS_Charachter::TriggerGrenade()
@@ -804,19 +851,18 @@ void AFPS_Charachter::ThrowGrenade()
 {
 	if (bIsAboutToUseGrenade)
 	{
-	
+
 		float CurrentTime = (GetWorld()->GetRealTimeSeconds() - TimeSetToThrow) * 2;
 		float CurrentMultiplier = FMath::Clamp(CurrentTime, MinSpeedToThrowGrenadein, MaxSpeedToThrowGrenadein);
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Time %f - %f"), GetWorld()->TimeSeconds,  CurrentTime));
 		//Use animations to trigger later on
-		auto SpawnPoint = GetActorLocation() + FVector(0,0, 50) + (GetFirstPersonCameraComponent()->GetForwardVector() * 50);
+		auto SpawnPoint = GetActorLocation() + FVector(0, 0, 50) + (GetFirstPersonCameraComponent()->GetForwardVector() * 50);
 
 		auto SpawnRot = GetFirstPersonCameraComponent()->GetComponentRotation();
 		FActorSpawnParameters asp;
 		asp.Instigator = this;
 		asp.Owner = this;
 		asp.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		auto Nade = GetWorld()->SpawnActor<AGrenadeExp>(GrenadeClass, SpawnPoint, FRotator(0,0,0), asp);
+		auto Nade = GetWorld()->SpawnActor<AGrenadeExp>(GrenadeClass, SpawnPoint, FRotator(0, 0, 0), asp);
 		//Account char vel
 		FVector Forward = GetFirstPersonCameraComponent()->GetForwardVector();
 		FVector Impulse = GetActorLocation() + (Forward * (500.0f * CurrentMultiplier) + Forward * FVector::DotProduct(Forward, GetVelocity()));
@@ -832,12 +878,12 @@ void AFPS_Charachter::ThrowGrenade()
 			0.0F,
 			.8F
 		);
-		if(bHaveAimSolution)
+		if (bHaveAimSolution)
 			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Current multiplier, %f"), CurrentMultiplier));
 		//FVector Vel = (Impulse + OutLaunchVelocity);// + (Forward * 5000.0f);
 		Nade->SetProjectileVelocityOnThrow_2(OutLaunchVelocity, CurrentMultiplier);
-		
-		
+
+
 		bIsAboutToUseGrenade = false;
 		GrenadeCount--;
 
@@ -882,6 +928,10 @@ void AFPS_Charachter::Tick(float DeltaSeconds)
 	FVector LinetraceStart; //= //GetFirstPersonCameraComponent()->GetComponentLocation();
 	FRotator NormalRotation; //=// GetFirstPersonCameraComponent()->GetForwardVector();
 	Mesh3P->GetSocketWorldLocationAndRotation(EyeSocketName, LinetraceStart, NormalRotation);
+	if (FirstPersonCameraComponent->IsActive())
+	{
+		NormalRotation = GetFirstPersonCameraComponent()->GetComponentRotation();
+	}
 	FVector LineTraceEnd = LinetraceStart + (NormalRotation.Vector() * DefaultTraceDistance);
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), LinetraceStart, LineTraceEnd, ETraceTypeQuery::TraceTypeQuery1, false, { this }, EDrawDebugTrace::ForOneFrame, CurrentObjectHit, true);
 
